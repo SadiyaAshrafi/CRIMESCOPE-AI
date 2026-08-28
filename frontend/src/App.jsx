@@ -2,28 +2,47 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
 import Cases from "./pages/Cases";
+import CaseDetails from "./pages/CaseDetails";
+import Copilot from "./pages/Copilot";
 import NetworkDNA from "./pages/NetworkDNA";
 import Timeline from "./pages/Timeline";
-import Copilot from "./pages/Copilot";
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
+return ( <BrowserRouter> <Routes>
+    <Route
+      path="/"
+      element={<Dashboard />}
+    />
 
-        <Route path="/" element={<Dashboard />} />
+    <Route
+      path="/cases"
+      element={<Cases />}
+    />
 
-        <Route path="/cases" element={<Cases />} />
+    <Route
+      path="/cases/:caseId"
+      element={<CaseDetails />}
+    />
 
-        <Route path="/network-dna" element={<NetworkDNA />} />
+    <Route
+      path="/copilot"
+      element={<Copilot />}
+    />
 
-        <Route path="/timeline" element={<Timeline />} />
+    <Route
+      path="/network-dna"
+      element={<NetworkDNA />}
+    />
 
-        <Route path="/copilot" element={<Copilot />} />
+    <Route
+      path="/timeline"
+      element={<Timeline />}
+    />
 
-      </Routes>
-    </BrowserRouter>
-  );
+  </Routes>
+</BrowserRouter>
+
+);
 }
 
 export default App;
