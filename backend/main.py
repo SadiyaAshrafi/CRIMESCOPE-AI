@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from ai.extractor import (
@@ -20,6 +21,19 @@ app = FastAPI(
     title="CRIMESCOPE AI",
     description="AI + Evidence Intelligence Engine",
     version="1.0.0"
+)
+
+
+# =========================================================
+# CORS
+# =========================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -47,9 +61,6 @@ class TextInput(BaseModel):
 # =========================================================
 
 def clean_name(value: str) -> str:
-    """
-    Clean entity names before generating IDs.
-    """
     return (
         value
         .strip()
@@ -58,9 +69,6 @@ def clean_name(value: str) -> str:
 
 
 def make_id(value: str) -> str:
-    """
-    Convert an entity name into a stable ID.
-    """
     value = clean_name(value).lower()
 
     value = re.sub(
@@ -73,10 +81,6 @@ def make_id(value: str) -> str:
 
 
 def get_entity_type(entity: dict) -> str:
-    """
-    Normalize entity labels for graph usage.
-    """
-
     name = clean_name(
         entity.get("text", "")
     )
@@ -117,10 +121,6 @@ def get_entity_type(entity: dict) -> str:
 
 
 def normalize_entities(entities: list) -> list:
-    """
-    Clean and normalize extracted entities.
-    """
-
     result = []
     seen = set()
 
@@ -135,7 +135,6 @@ def normalize_entities(entities: list) -> list:
 
         entity_type = get_entity_type(entity)
 
-        # Ignore obvious noisy entities
         if name.lower() == "organization x investigators":
             continue
 
@@ -172,9 +171,6 @@ def normalize_relationships(
     evidence_id: str = None,
     date: str = None
 ) -> list:
-    """
-    Convert relationships into stable graph-ready records.
-    """
 
     result = []
     seen = set()
@@ -204,8 +200,6 @@ def normalize_relationships(
         source_id = make_id(source_name)
         target_id = make_id(target_name)
 
-        # Only create relationships between
-        # entities that actually exist.
         if source_id not in entity_lookup:
             continue
 
@@ -235,29 +229,44 @@ def normalize_relationships(
 
         result.append({
             "id": relationship_id,
-            "source_entity_id": source_id,
-            "target_entity_id": target_id,
-            "source": source_name,
-            "target": target_name,
-            "relationship": relationship_type,
-            "confidence": relationship.get(
-                "confidence",
-                0.0
-            ),
-            "evidence_id": evidence_id,
-            "date": date,
-            "timestamp": datetime.now(
-                timezone.utc
-            ).isoformat()
+
+            "source_entity_id":
+                source_id,
+
+            "target_entity_id":
+                target_id,
+
+            "source":
+                source_name,
+
+            "target":
+                target_name,
+
+            "relationship":
+                relationship_type,
+
+            "confidence":
+                relationship.get(
+                    "confidence",
+                    0.0
+                ),
+
+            "evidence_id":
+                evidence_id,
+
+            "date":
+                date,
+
+            "timestamp":
+                datetime.now(
+                    timezone.utc
+                ).isoformat()
         })
 
     return result
 
 
 def build_case(case: dict) -> dict:
-    """
-    Process one investigation case.
-    """
 
     case_id = case.get(
         "case_id",
@@ -284,9 +293,9 @@ def build_case(case: dict) -> dict:
         ""
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ENTITY EXTRACTION
-    # -----------------------------------------------------
+    # =====================================================
 
     raw_entities = extract_entities(text)
 
@@ -294,21 +303,20 @@ def build_case(case: dict) -> dict:
         raw_entities
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ENTITY RESOLUTION
-    # -----------------------------------------------------
+    # =====================================================
 
     resolved_entities = resolve_entities(
         entities
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # DATES
-    # -----------------------------------------------------
+    # =====================================================
 
     dates = extract_dates(text)
 
-    # Prefer case date when available
     if not dates and case_date:
         dates = [case_date]
 
@@ -318,9 +326,9 @@ def build_case(case: dict) -> dict:
         else case_date
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # EVIDENCE
-    # -----------------------------------------------------
+    # =====================================================
 
     evidence = create_evidence(
         case_id=case_id,
@@ -334,9 +342,9 @@ def build_case(case: dict) -> dict:
         "evidence_id"
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ENTITY LOOKUP
-    # -----------------------------------------------------
+    # =====================================================
 
     entity_lookup = {}
 
@@ -351,9 +359,9 @@ def build_case(case: dict) -> dict:
                 canonical_id
             ] = entity
 
-    # -----------------------------------------------------
+    # =====================================================
     # RELATIONSHIPS
-    # -----------------------------------------------------
+    # =====================================================
 
     raw_relationships = extract_relationships(
         text,
@@ -368,9 +376,9 @@ def build_case(case: dict) -> dict:
         primary_date
     )
 
-    # -----------------------------------------------------
-    # CASE ENTITY IDS
-    # -----------------------------------------------------
+    # =====================================================
+    # IDS
+    # =====================================================
 
     entity_ids = [
         entity.get("canonical_id")
@@ -378,18 +386,14 @@ def build_case(case: dict) -> dict:
         if entity.get("canonical_id")
     ]
 
-    # -----------------------------------------------------
-    # CASE RELATIONSHIP IDS
-    # -----------------------------------------------------
-
     relationship_ids = [
         relationship["id"]
         for relationship in relationships
     ]
 
-    # -----------------------------------------------------
-    # FINAL CASE OBJECT
-    # -----------------------------------------------------
+    # =====================================================
+    # FINAL CASE
+    # =====================================================
 
     return {
         "case_id": case_id,
@@ -428,12 +432,30 @@ def build_case(case: dict) -> dict:
 def home():
 
     return {
-        "system": "CRIMESCOPE AI",
+        "system":
+            "CRIMESCOPE AI",
 
-        "module": "AI + Evidence Intelligence Engine",
+        "module":
+            "AI + Evidence Intelligence Engine",
 
-        "status": "running",
+        "status":
+            "running",
 
+        "version":
+            "1.0.0"
+    }
+
+
+# =========================================================
+# HEALTH
+# =========================================================
+
+@app.get("/health")
+def health():
+
+    return {
+        "status": "healthy",
+        "service": "CRIMESCOPE AI",
         "version": "1.0.0"
     }
 
@@ -487,19 +509,26 @@ def extract_information(
     )
 
     return {
-        "status": "success",
+        "status":
+            "success",
 
-        "case_id": data.case_id,
+        "case_id":
+            data.case_id,
 
-        "entities": entities,
+        "entities":
+            entities,
 
-        "resolved_entities": resolved_entities,
+        "resolved_entities":
+            resolved_entities,
 
-        "dates": dates,
+        "dates":
+            dates,
 
-        "relationships": relationships,
+        "relationships":
+            relationships,
 
-        "evidence": evidence
+        "evidence":
+            evidence
     }
 
 
@@ -513,13 +542,14 @@ def process_cases():
     if not DATA_FILE.exists():
 
         return {
-            "status": "error",
+            "status":
+                "error",
 
-            "message": (
-                "sample_cases.json was not found."
-            ),
+            "message":
+                "sample_cases.json was not found.",
 
-            "file": str(DATA_FILE)
+            "file":
+                str(DATA_FILE)
         }
 
     with open(
@@ -554,12 +584,11 @@ def process_cases():
 
     return {
 
-        "status": "success",
+        "status":
+            "success",
 
-        "message": (
-            "All investigation cases "
-            "processed successfully."
-        ),
+        "message":
+            "All investigation cases processed successfully.",
 
         "summary": {
 
@@ -591,11 +620,11 @@ def graph_data():
     if not DATA_FILE.exists():
 
         return {
-            "status": "error",
+            "status":
+                "error",
 
-            "message": (
+            "message":
                 "sample_cases.json was not found."
-            )
         }
 
     with open(
@@ -619,9 +648,9 @@ def graph_data():
             "case_id"
         ]
 
-        # -------------------------------------------------
+        # =================================================
         # NODES
-        # -------------------------------------------------
+        # =================================================
 
         for entity in processed_case[
             "resolved_entities"
@@ -674,9 +703,9 @@ def graph_data():
                         case_id
                     )
 
-        # -------------------------------------------------
+        # =================================================
         # EDGES
-        # -------------------------------------------------
+        # =================================================
 
         for relationship in processed_case[
             "relationships"
@@ -722,9 +751,9 @@ def graph_data():
                     case_id
             })
 
-    # -----------------------------------------------------
+    # =====================================================
     # REMOVE DUPLICATE EDGES
-    # -----------------------------------------------------
+    # =====================================================
 
     unique_edges = {}
 
@@ -741,7 +770,8 @@ def graph_data():
 
     return {
 
-        "status": "success",
+        "status":
+            "success",
 
         "nodes":
             list(nodes.values()),
@@ -761,11 +791,11 @@ def intelligence_summary():
     if not DATA_FILE.exists():
 
         return {
-            "status": "error",
+            "status":
+                "error",
 
-            "message": (
+            "message":
                 "sample_cases.json was not found."
-            )
         }
 
     with open(
@@ -788,9 +818,9 @@ def intelligence_summary():
 
     all_relationships = []
 
-    # -----------------------------------------------------
+    # =====================================================
     # COLLECT ENTITIES
-    # -----------------------------------------------------
+    # =====================================================
 
     for case in processed_cases:
 
@@ -844,9 +874,9 @@ def intelligence_summary():
             case["relationships"]
         )
 
-    # -----------------------------------------------------
-    # CROSS-CASE ENTITIES
-    # -----------------------------------------------------
+    # =====================================================
+    # CROSS CASE ENTITIES
+    # =====================================================
 
     cross_case_entities = [
 
@@ -858,16 +888,14 @@ def intelligence_summary():
     ]
 
     cross_case_entities.sort(
-
         key=lambda entity:
             len(entity["case_ids"]),
-
         reverse=True
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # CONNECTION COUNTS
-    # -----------------------------------------------------
+    # =====================================================
 
     connection_counts = {}
 
@@ -928,10 +956,8 @@ def intelligence_summary():
         })
 
     top_connected_entities.sort(
-
         key=lambda entity:
             entity["connection_count"],
-
         reverse=True
     )
 
@@ -939,9 +965,9 @@ def intelligence_summary():
         top_connected_entities[:10]
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # HIGH CONFIDENCE RELATIONSHIPS
-    # -----------------------------------------------------
+    # =====================================================
 
     high_confidence_relationships = [
 
@@ -955,9 +981,9 @@ def intelligence_summary():
         ) >= 0.80
     ]
 
-    # -----------------------------------------------------
+    # =====================================================
     # CASE INSIGHTS
-    # -----------------------------------------------------
+    # =====================================================
 
     case_insights = []
 
@@ -987,13 +1013,14 @@ def intelligence_summary():
                 case["relationship_ids"]
         })
 
-    # -----------------------------------------------------
+    # =====================================================
     # FINAL RESPONSE
-    # -----------------------------------------------------
+    # =====================================================
 
     return {
 
-        "status": "success",
+        "status":
+            "success",
 
         "summary": {
 
@@ -1039,11 +1066,11 @@ def integration_data():
     if not DATA_FILE.exists():
 
         return {
-            "status": "error",
+            "status":
+                "error",
 
-            "message": (
+            "message":
                 "sample_cases.json was not found."
-            )
         }
 
     with open(
@@ -1057,7 +1084,9 @@ def integration_data():
     processed_cases = []
 
     entities_map = {}
+
     relationships = []
+
     evidence_records = []
 
     # =====================================================
@@ -1078,9 +1107,9 @@ def integration_data():
             "case_id"
         ]
 
-        # -------------------------------------------------
+        # =================================================
         # ENTITIES
-        # -------------------------------------------------
+        # =================================================
 
         for entity in processed_case[
             "resolved_entities"
@@ -1126,7 +1155,8 @@ def integration_data():
                     "case_ids":
                         [case_id],
 
-                    "metadata": {}
+                    "metadata":
+                        {}
                 }
 
             else:
@@ -1141,9 +1171,9 @@ def integration_data():
                         case_id
                     )
 
-        # -------------------------------------------------
+        # =================================================
         # RELATIONSHIPS
-        # -------------------------------------------------
+        # =================================================
 
         relationships.extend(
             processed_case[
@@ -1151,9 +1181,9 @@ def integration_data():
             ]
         )
 
-        # -------------------------------------------------
+        # =================================================
         # EVIDENCE
-        # -------------------------------------------------
+        # =================================================
 
         evidence = processed_case[
             "evidence"
@@ -1249,12 +1279,16 @@ def integration_data():
 
     return {
 
-        "status": "success",
+        "status":
+            "success",
 
-        "version": "1.0",
+        "version":
+            "1.0",
 
         "entities":
-            list(entities_map.values()),
+            list(
+                entities_map.values()
+            ),
 
         "relationships":
             relationships,
