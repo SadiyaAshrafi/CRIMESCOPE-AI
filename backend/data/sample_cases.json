@@ -1,0 +1,37 @@
+[
+  {
+    "case_id": "CASE-101",
+    "title": "Logistics Investigation",
+    "date": "2026-03-15",
+    "location": "Bengaluru",
+    "description": "Person A was associated with Organization X during an investigation in Bengaluru. The investigation also recorded activity involving Location Y."
+  },
+  {
+    "case_id": "CASE-102",
+    "title": "Financial Investigation",
+    "date": "2026-04-21",
+    "location": "Mysuru",
+    "description": "Person B was associated with Organization X. Investigators recorded activity involving Location Z and identified a connection to Person A."
+  },
+  {
+    "case_id": "CASE-103",
+    "title": "Network Investigation",
+    "date": "2026-05-10",
+    "location": "Bengaluru",
+    "description": "Person A and Person B were identified in records associated with Organization X. The investigation also referenced Location Y."
+  },
+  {
+    "case_id": "CASE-104",
+    "title": "Transport Investigation",
+    "date": "2026-06-02",
+    "location": "Tumakuru",
+    "description": "Organization X was referenced in connection with Person C and an event near Location Y."
+  },
+  {
+    "case_id": "CASE-105",
+    "title": "Regional Investigation",
+    "date": "2026-06-20",
+    "location": "Bengaluru",
+    "description": "Person C appeared in records connected to Person A and Organization X during an investigation involving Location Y."
+  }
+]
