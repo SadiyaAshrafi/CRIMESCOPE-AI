@@ -1,3 +1,5 @@
+
+import { useState } from "react";
 import {
   Folder,
   Users,
@@ -10,25 +12,23 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import StatCard from "../components/StatCard";
 import NetworkGraph from "../components/NetworkGraph";
+import EvidencePanel from "../components/EvidencePanel";
 
 function Dashboard() {
+  const [selectedEvidence, setSelectedEvidence] = useState(null);
 
   return (
     <div className="app-layout">
-
       <Sidebar />
 
       <main className="main-content">
-
         <Header />
 
         <section className="dashboard">
 
           <div className="page-heading">
-
             <div>
               <h1>Investigation Dashboard</h1>
-
               <p>
                 Evidence-aware criminal network intelligence
               </p>
@@ -37,12 +37,9 @@ function Dashboard() {
             <button className="primary-button">
               + New Investigation
             </button>
-
           </div>
 
-
           <div className="stats-grid">
-
             <StatCard
               title="ACTIVE CASES"
               value="5"
@@ -70,19 +67,14 @@ function Dashboard() {
               description="Potential connections"
               icon={<Network size={20} />}
             />
-
           </div>
-
 
           <div className="dashboard-grid">
 
             <div className="panel network-panel">
-
               <div className="panel-header">
-
                 <div>
                   <h2>Criminal Network</h2>
-
                   <p>
                     Interactive relationship intelligence
                   </p>
@@ -91,37 +83,33 @@ function Dashboard() {
                 <button className="secondary-button">
                   Expand
                 </button>
-
               </div>
 
               <div className="network-placeholder">
-                <NetworkGraph />
+                <NetworkGraph
+                        onNodeSelect={(item) => {
+                   if (item.type === "RELATIONSHIP") {
+                     setSelectedEvidence(item);
+                   }
+                  }}
+               />
               </div>
-
             </div>
 
-
             <div className="panel insights-panel">
-
               <div className="panel-header">
-
                 <div>
                   <h2>AI Insights</h2>
-
                   <p>
                     Intelligence requiring attention
                   </p>
                 </div>
 
                 <AlertTriangle size={20} />
-
               </div>
 
               <div className="insight">
-
-                <div className="insight-alert">
-                  !
-                </div>
+                <div className="insight-alert">!</div>
 
                 <div>
                   <strong>
@@ -129,19 +117,14 @@ function Dashboard() {
                   </strong>
 
                   <p>
-                    CASE-101 and CASE-103 share
-                    Ravi Kumar and Eastern Logistics.
+                    CASE-101 and CASE-103 share Ravi Kumar
+                    and Eastern Logistics.
                   </p>
                 </div>
-
               </div>
 
-
               <div className="insight">
-
-                <div className="insight-alert">
-                  !
-                </div>
+                <div className="insight-alert">!</div>
 
                 <div>
                   <strong>
@@ -153,33 +136,24 @@ function Dashboard() {
                     cluster in June 2026.
                   </p>
                 </div>
-
               </div>
-
 
               <button className="full-button">
                 Discover Related Cases
               </button>
-
             </div>
-
           </div>
 
-
           <div className="panel dna-summary">
-
             <div>
-
               <h2>Network DNA</h2>
 
               <p>
                 Current intelligence network overview
               </p>
-
             </div>
 
             <div className="dna-values">
-
               <div>
                 <strong>27</strong>
                 <span>Entities</span>
@@ -204,15 +178,17 @@ function Dashboard() {
                 <strong>8</strong>
                 <span>Cross-case</span>
               </div>
-
             </div>
-
           </div>
 
         </section>
 
-      </main>
+        <EvidencePanel
+          evidence={selectedEvidence}
+          onClose={() => setSelectedEvidence(null)}
+        />
 
+      </main>
     </div>
   );
 }
