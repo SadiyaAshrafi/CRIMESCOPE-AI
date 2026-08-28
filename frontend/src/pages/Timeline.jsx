@@ -1,189 +1,186 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Clock3,
   CalendarDays,
-  User,
-  Building2,
+  Clock3,
+  Folder,
   MapPin,
-  FileText,
-  Network,
-  ChevronDown,
-  Search,
-  Filter,
+  Users,
+  GitBranch,
+  AlertTriangle,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 
-const mockTimelineEvents = [
-  {
-    id: 1,
-    date: "2026-08-27",
-    time: "18:42",
-    type: "RELATIONSHIP",
-    title: "New network relationship identified",
-    description:
-      "A previously unknown relationship was detected between Ravi Kumar and Eastern Logistics.",
-    entity: "Ravi Kumar",
-    relatedEntity: "Eastern Logistics",
-    location: "Chennai",
-    caseId: "CASE-2026-014",
-    confidence: 94,
-  },
-  {
-    id: 2,
-    date: "2026-08-27",
-    time: "15:18",
-    type: "EVIDENCE",
-    title: "Evidence linked to investigation",
-    description:
-      "A financial document was connected to an existing investigation and associated entities.",
-    entity: "Ravi Kumar",
-    relatedEntity: "Financial Record",
-    location: "Chennai",
-    caseId: "CASE-2026-014",
-    confidence: 91,
-  },
-  {
-    id: 3,
-    date: "2026-08-26",
-    time: "21:05",
-    type: "ENTITY",
-    title: "New organization identified",
-    description:
-      "Eastern Logistics was added to the intelligence graph after entity extraction.",
-    entity: "Eastern Logistics",
-    relatedEntity: null,
-    location: "Chennai",
-    caseId: "CASE-2026-011",
-    confidence: 97,
-  },
-  {
-    id: 4,
-    date: "2026-08-26",
-    time: "13:27",
-    type: "CASE",
-    title: "Investigation activity detected",
-    description:
-      "Multiple entities from an active investigation were connected to an existing network cluster.",
-    entity: "CASE-2026-011",
-    relatedEntity: "Network Cluster 03",
-    location: "Bengaluru",
-    caseId: "CASE-2026-011",
-    confidence: 88,
-  },
-  {
-    id: 5,
-    date: "2026-08-25",
-    time: "17:51",
-    type: "LOCATION",
-    title: "Location association discovered",
-    description:
-      "A location was identified as a shared point between entities across multiple investigations.",
-    entity: "Chennai Port",
-    relatedEntity: "Eastern Logistics",
-    location: "Chennai",
-    caseId: "CASE-2026-009",
-    confidence: 86,
-  },
-  {
-    id: 6,
-    date: "2026-08-24",
-    time: "11:36",
-    type: "RELATIONSHIP",
-    title: "Cross-case relationship detected",
-    description:
-      "An entity appearing in two investigations was identified as a potential cross-case connector.",
-    entity: "Arun Mehta",
-    relatedEntity: "CASE-2026-014",
-    location: "Mumbai",
-    caseId: "CASE-2026-014",
-    confidence: 93,
-  },
-  {
-    id: 7,
-    date: "2026-08-23",
-    time: "09:14",
-    type: "EVIDENCE",
-    title: "Communication record processed",
-    description:
-      "A communication record was processed and matched against entities in the intelligence graph.",
-    entity: "Arun Mehta",
-    relatedEntity: "Communication Record",
-    location: "Mumbai",
-    caseId: "CASE-2026-009",
-    confidence: 89,
-  },
-  {
-    id: 8,
-    date: "2026-08-21",
-    time: "16:48",
-    type: "ENTITY",
-    title: "Person entity added",
-    description:
-      "A person entity was extracted from newly processed investigation evidence.",
-    entity: "Vikram Shah",
-    relatedEntity: null,
-    location: "Delhi",
-    caseId: "CASE-2026-006",
-    confidence: 95,
-  },
-];
-
-const eventTypes = [
-  "ALL",
-  "RELATIONSHIP",
-  "EVIDENCE",
-  "ENTITY",
-  "CASE",
-  "LOCATION",
-];
+import { getIntegrationData } from "../services/api";
 
 function Timeline() {
-  const [selectedType, setSelectedType] = useState("ALL");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [integrationData, setIntegrationData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredEvents = useMemo(() => {
-    return mockTimelineEvents.filter((event) => {
-      const matchesType =
-        selectedType === "ALL" || event.type === selectedType;
+  useEffect(() => {
+    let mounted = true;
 
-      const searchableText = [
-        event.title,
-        event.description,
-        event.entity,
-        event.relatedEntity,
-        event.location,
-        event.caseId,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-      const matchesSearch = searchableText.includes(
-        searchTerm.toLowerCase()
+        const data = await getIntegrationData();
+
+        if (mounted) {
+          setIntegrationData(data);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(
+            err?.message || "Unable to load investigation timeline."
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const cases = integrationData?.cases ?? [];
+  const entities = integrationData?.entities ?? [];
+  const relationships = integrationData?.relationships ?? [];
+  const evidence = integrationData?.evidence ?? [];
+
+  const timelineEvents = useMemo(() => {
+    return cases
+      .map((caseItem) => {
+        const caseDate =
+          caseItem.dates?.[0] ||
+          caseItem.date ||
+          null;
+
+        const caseEntities = entities.filter((entity) =>
+          (caseItem.entity_ids ?? []).includes(entity.id)
+        );
+
+        const caseRelationships = relationships.filter((relationship) =>
+          (caseItem.relationship_ids ?? []).includes(relationship.id)
+        );
+
+        const caseEvidence = evidence.filter(
+          (item) => item.case_id === caseItem.case_id
+        );
+
+        return {
+          id: caseItem.case_id,
+          caseId: caseItem.case_id,
+
+          title:
+            caseItem.title ||
+            caseItem.name ||
+            caseItem.case_id,
+
+          description:
+            caseItem.description ||
+            caseItem.summary ||
+            "Investigation activity recorded.",
+
+          date: caseDate,
+
+          location:
+            caseItem.location ||
+            "Location unavailable",
+
+          entityCount: caseEntities.length,
+          relationshipCount: caseRelationships.length,
+          evidenceCount: caseEvidence.length,
+
+          entities: caseEntities,
+          relationships: caseRelationships,
+          evidence: caseEvidence,
+        };
+      })
+      .filter((event) => event.date)
+      .sort(
+        (a, b) =>
+          new Date(b.date).getTime() -
+          new Date(a.date).getTime()
       );
+  }, [cases, entities, relationships, evidence]);
 
-      return matchesType && matchesSearch;
-    });
-  }, [selectedType, searchTerm]);
+  const totalEvents = timelineEvents.length;
+  const totalEvidence = evidence.length;
 
-  const getEventIcon = (type) => {
-    switch (type) {
-      case "RELATIONSHIP":
-        return <Network size={17} />;
-      case "EVIDENCE":
-        return <FileText size={17} />;
-      case "ENTITY":
-        return <User size={17} />;
-      case "CASE":
-        return <CalendarDays size={17} />;
-      case "LOCATION":
-        return <MapPin size={17} />;
-      default:
-        return <Clock3 size={17} />;
+  const totalLocations = useMemo(() => {
+    return new Set(
+      timelineEvents
+        .map((event) => event.location)
+        .filter(Boolean)
+    ).size;
+  }, [timelineEvents]);
+
+  const latestEvent = timelineEvents[0] ?? null;
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return date;
     }
+
+    return parsed.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatDay = (date) => {
+    if (!date) return "—";
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return "—";
+    }
+
+    return parsed.toLocaleDateString("en-IN", {
+      day: "2-digit",
+    });
+  };
+
+  const formatMonth = (date) => {
+    if (!date) return "—";
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return "—";
+    }
+
+    return parsed.toLocaleDateString("en-IN", {
+      month: "short",
+    });
+  };
+
+  const getEventType = (event) => {
+    if (event.relationshipCount > 0) {
+      return "NETWORK ACTIVITY";
+    }
+
+    if (event.evidenceCount > 0) {
+      return "EVIDENCE ACTIVITY";
+    }
+
+    return "INVESTIGATION";
   };
 
   return (
@@ -194,285 +191,424 @@ function Timeline() {
         <Header />
 
         <section className="dashboard timeline-page">
+
+          {/* PAGE HEADER */}
+
           <div className="page-heading">
             <div>
-              <h1>Network Timeline</h1>
+              <h1>Investigation Timeline</h1>
+
               <p>
-                Temporal investigation intelligence across cases and
-                relationships
+                Chronological intelligence across criminal investigations
               </p>
             </div>
 
             <div className="timeline-live-status">
               <span className="status-dot" />
-              LIVE TIMELINE
+              LIVE INTELLIGENCE
             </div>
           </div>
 
-          <div className="timeline-overview-grid">
-            <div className="stat-card">
-              <div className="stat-top">
-                <span>TOTAL EVENTS</span>
-                <Clock3 size={18} className="stat-icon" />
+          {/* ERROR */}
+
+          {error && (
+            <div className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>Backend Connection</h2>
+
+                  <p>
+                    Unable to load timeline intelligence.
+                  </p>
+                </div>
+
+                <AlertTriangle size={20} />
               </div>
 
-              <div className="stat-value">{mockTimelineEvents.length}</div>
+              <p>{error}</p>
 
-              <div className="stat-description">
-                Intelligence events tracked
-              </div>
+              <p>
+                Make sure the backend is running on
+                http://127.0.0.1:8000.
+              </p>
             </div>
+          )}
+
+          {/* SUMMARY CARDS */}
+
+          <div className="stats-grid">
 
             <div className="stat-card">
               <div className="stat-top">
-                <span>RELATIONSHIPS</span>
-                <Network size={18} className="stat-icon" />
+                <span>EVENTS</span>
+
+                <CalendarDays
+                  size={18}
+                  className="stat-icon"
+                />
               </div>
 
               <div className="stat-value">
-                {
-                  mockTimelineEvents.filter(
-                    (event) => event.type === "RELATIONSHIP"
-                  ).length
-                }
+                {loading ? "—" : totalEvents}
               </div>
 
               <div className="stat-description">
-                Network connections discovered
+                Investigation timeline events
               </div>
             </div>
 
             <div className="stat-card">
               <div className="stat-top">
-                <span>EVIDENCE EVENTS</span>
-                <FileText size={18} className="stat-icon" />
+                <span>EVIDENCE</span>
+
+                <Folder
+                  size={18}
+                  className="stat-icon"
+                />
               </div>
 
               <div className="stat-value">
-                {
-                  mockTimelineEvents.filter(
-                    (event) => event.type === "EVIDENCE"
-                  ).length
-                }
+                {loading ? "—" : totalEvidence}
               </div>
 
               <div className="stat-description">
-                Evidence intelligence updates
+                Evidence records available
               </div>
             </div>
 
             <div className="stat-card">
               <div className="stat-top">
-                <span>CROSS-CASE</span>
-                <Building2 size={18} className="stat-icon" />
+                <span>LOCATIONS</span>
+
+                <MapPin
+                  size={18}
+                  className="stat-icon"
+                />
               </div>
 
-              <div className="stat-value">3</div>
+              <div className="stat-value">
+                {loading ? "—" : totalLocations}
+              </div>
 
               <div className="stat-description">
-                Events connecting investigations
+                Investigation locations
               </div>
             </div>
-          </div>
 
-          <div className="panel timeline-controls-panel">
-            <div className="timeline-search">
-              <Search size={16} />
+            <div className="stat-card">
+              <div className="stat-top">
+                <span>LATEST ACTIVITY</span>
 
-              <input
-                type="text"
-                placeholder="Search timeline events, entities, cases..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
+                <Clock3
+                  size={18}
+                  className="stat-icon"
+                />
+              </div>
+
+              <div className="stat-value case-date-value">
+                {loading
+                  ? "—"
+                  : latestEvent
+                  ? formatDate(latestEvent.date)
+                  : "—"}
+              </div>
+
+              <div className="stat-description">
+                Most recent investigation event
+              </div>
             </div>
 
-            <div className="timeline-filter">
-              <Filter size={15} />
-
-              <select
-                value={selectedType}
-                onChange={(event) => setSelectedType(event.target.value)}
-              >
-                {eventTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type === "ALL" ? "All Events" : type}
-                  </option>
-                ))}
-              </select>
-
-              <ChevronDown size={14} />
-            </div>
           </div>
+
+          {/* TIMELINE PANEL */}
 
           <div className="panel timeline-panel">
+
             <div className="panel-header">
               <div>
                 <h2>Investigation Activity</h2>
+
                 <p>
-                  Chronological intelligence events across the network
+                  Chronological view of backend investigation intelligence
                 </p>
               </div>
 
               <span className="timeline-count">
-                {filteredEvents.length} events
+                {loading
+                  ? "Loading..."
+                  : `${totalEvents} events`}
               </span>
             </div>
 
-            <div className="timeline-list">
-              {filteredEvents.length === 0 ? (
-                <div className="timeline-empty">
-                  <Clock3 size={28} />
-                  <h3>No timeline events found</h3>
-                  <p>
-                    Try changing the search term or event filter.
-                  </p>
-                </div>
-              ) : (
-                filteredEvents.map((event, index) => (
-                  <div className="timeline-item" key={event.id}>
+            {/* LOADING */}
+
+            {loading ? (
+              <div className="timeline-empty">
+                <Clock3 size={28} />
+
+                <h3>
+                  Loading investigation timeline...
+                </h3>
+
+                <p>
+                  Fetching cases and investigation activity
+                  from the backend.
+                </p>
+              </div>
+
+            ) : timelineEvents.length === 0 ? (
+
+              /* EMPTY */
+
+              <div className="timeline-empty">
+                <CalendarDays size={28} />
+
+                <h3>
+                  No timeline events available
+                </h3>
+
+                <p>
+                  The backend returned no investigation
+                  cases with dates.
+                </p>
+              </div>
+
+            ) : (
+
+              /* TIMELINE */
+
+              <div className="timeline-list">
+
+                {timelineEvents.map((event, index) => (
+                  <div
+                    className="timeline-item"
+                    key={event.id}
+                  >
+
+                    {/* DATE */}
+
                     <div className="timeline-date">
-                      <strong>{event.date}</strong>
-                      <span>{event.time}</span>
+                      <strong>
+                        {formatDay(event.date)}
+                      </strong>
+
+                      <span>
+                        {formatMonth(event.date)}
+                      </span>
                     </div>
+
+                    {/* TIMELINE TRACK */}
 
                     <div className="timeline-track">
-                      <div className="timeline-icon">
-                        {getEventIcon(event.type)}
+
+                      <div className="timeline-marker">
+                        <span />
                       </div>
 
-                      {index !== filteredEvents.length - 1 && (
+                      {index <
+                        timelineEvents.length - 1 && (
                         <div className="timeline-line" />
                       )}
+
                     </div>
 
-                    <button
-                      className="timeline-event-card"
-                      onClick={() => setSelectedEvent(event)}
-                    >
-                      <div className="timeline-event-top">
-                        <span className="timeline-event-type">
-                          {event.type}
-                        </span>
+                    {/* EVENT CONTENT */}
 
-                        <span className="timeline-confidence">
-                          {event.confidence}% confidence
-                        </span>
+                    <div className="timeline-content">
+
+                      <div className="timeline-event-header">
+
+                        <div>
+                          <span className="timeline-event-type">
+                            {getEventType(event)}
+                          </span>
+
+                          <h3>
+                            {event.title}
+                          </h3>
+
+                          <span className="timeline-case-id">
+                            {event.caseId}
+                          </span>
+                        </div>
+
+                        <div className="timeline-event-date">
+                          <CalendarDays size={14} />
+
+                          {formatDate(event.date)}
+                        </div>
+
                       </div>
 
-                      <h3>{event.title}</h3>
+                      <p className="timeline-description">
+                        {event.description}
+                      </p>
 
-                      <p>{event.description}</p>
+                      {/* LOCATION */}
 
-                      <div className="timeline-event-meta">
-                        <span>
-                          <User size={12} />
-                          {event.entity}
-                        </span>
-
-                        {event.relatedEntity && (
-                          <span>
-                            <Network size={12} />
-                            {event.relatedEntity}
-                          </span>
-                        )}
+                      <div className="timeline-location">
+                        <MapPin size={15} />
 
                         <span>
-                          <MapPin size={12} />
                           {event.location}
                         </span>
-
-                        <span className="timeline-case">
-                          {event.caseId}
-                        </span>
                       </div>
-                    </button>
+
+                      {/* EVENT METRICS */}
+
+                      <div className="timeline-event-metrics">
+
+                        <div className="timeline-metric">
+                          <Users size={15} />
+
+                          <div>
+                            <strong>
+                              {event.entityCount}
+                            </strong>
+
+                            <span>
+                              Entities
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="timeline-metric">
+                          <GitBranch size={15} />
+
+                          <div>
+                            <strong>
+                              {event.relationshipCount}
+                            </strong>
+
+                            <span>
+                              Relationships
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="timeline-metric">
+                          <Folder size={15} />
+
+                          <div>
+                            <strong>
+                              {event.evidenceCount}
+                            </strong>
+
+                            <span>
+                              Evidence
+                            </span>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* ENTITY TAGS */}
+
+                      {event.entities.length > 0 && (
+                        <div className="timeline-entities">
+
+                          {event.entities
+                            .slice(0, 6)
+                            .map((entity) => (
+                              <span
+                                key={entity.id}
+                                className="timeline-entity-tag"
+                              >
+                                {entity.name}
+                              </span>
+                            ))}
+
+                          {event.entities.length > 6 && (
+                            <span className="timeline-entity-tag">
+                              +{event.entities.length - 6} more
+                            </span>
+                          )}
+
+                        </div>
+                      )}
+
+                    </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+
+              </div>
+            )}
+
           </div>
 
-          {selectedEvent && (
-            <div
-              className="timeline-detail-overlay"
-              onClick={() => setSelectedEvent(null)}
-            >
-              <div
-                className="timeline-detail-panel"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="panel-header">
+          {/* TIMELINE INTELLIGENCE */}
+
+          {!loading &&
+            timelineEvents.length > 0 && (
+              <div className="panel timeline-summary">
+
+                <div>
+                  <h2>
+                    Timeline Intelligence
+                  </h2>
+
+                  <p>
+                    Current chronological investigation overview
+                  </p>
+                </div>
+
+                <div className="dna-values">
+
                   <div>
-                    <span className="timeline-detail-label">
-                      INTELLIGENCE EVENT
+                    <strong>
+                      {timelineEvents.length}
+                    </strong>
+
+                    <span>
+                      Events
                     </span>
-
-                    <h2>{selectedEvent.title}</h2>
-
-                    <p>
-                      {selectedEvent.date} · {selectedEvent.time}
-                    </p>
                   </div>
 
-                  <button
-                    className="timeline-detail-close"
-                    onClick={() => setSelectedEvent(null)}
-                  >
-                    ×
-                  </button>
+                  <div>
+                    <strong>
+                      {cases.length}
+                    </strong>
+
+                    <span>
+                      Cases
+                    </span>
+                  </div>
+
+                  <div>
+                    <strong>
+                      {entities.length}
+                    </strong>
+
+                    <span>
+                      Entities
+                    </span>
+                  </div>
+
+                  <div>
+                    <strong>
+                      {relationships.length}
+                    </strong>
+
+                    <span>
+                      Relationships
+                    </span>
+                  </div>
+
+                  <div>
+                    <strong>
+                      {evidence.length}
+                    </strong>
+
+                    <span>
+                      Evidence
+                    </span>
+                  </div>
+
                 </div>
 
-                <div className="timeline-detail-body">
-                  <div className="timeline-detail-description">
-                    <span>EVENT DESCRIPTION</span>
-                    <p>{selectedEvent.description}</p>
-                  </div>
-
-                  <div className="timeline-detail-grid">
-                    <div>
-                      <span>EVENT TYPE</span>
-                      <strong>{selectedEvent.type}</strong>
-                    </div>
-
-                    <div>
-                      <span>CONFIDENCE</span>
-                      <strong>{selectedEvent.confidence}%</strong>
-                    </div>
-
-                    <div>
-                      <span>PRIMARY ENTITY</span>
-                      <strong>{selectedEvent.entity}</strong>
-                    </div>
-
-                    <div>
-                      <span>RELATED ENTITY</span>
-                      <strong>
-                        {selectedEvent.relatedEntity || "—"}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>LOCATION</span>
-                      <strong>{selectedEvent.location}</strong>
-                    </div>
-
-                    <div>
-                      <span>CASE</span>
-                      <strong>{selectedEvent.caseId}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  className="primary-button timeline-detail-button"
-                  onClick={() => setSelectedEvent(null)}
-                >
-                  Close Intelligence
-                </button>
               </div>
-            </div>
-          )}
+            )}
+
         </section>
       </main>
     </div>

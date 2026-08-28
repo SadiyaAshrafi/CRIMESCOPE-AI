@@ -1,63 +1,126 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
-async function apiRequest(endpoint, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+export async function getIntegrationData() {
+  const response = await fetch(`${API_BASE_URL}/integration-data`, {
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(options.headers || {}),
     },
-    ...options,
   });
 
   if (!response.ok) {
     throw new Error(
-      `API request failed: ${response.status} ${response.statusText}`
+      `Integration API failed with status ${response.status}`
+    );
+  }
+
+  const data = await response.json();
+
+  if (data.status && data.status !== "success") {
+    throw new Error("Integration API returned an unsuccessful response");
+  }
+
+  return data;
+}
+
+export async function getCaseNetwork(caseId) {
+  const response = await fetch(
+    `${API_BASE_URL}/cases/${encodeURIComponent(caseId)}/network`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Case network API failed with status ${response.status}`
     );
   }
 
   return response.json();
 }
 
-// Cases
-export const getCases = () => apiRequest("/cases");
+export async function getRelatedCases(caseId) {
+  const response = await fetch(
+    `${API_BASE_URL}/cases/${encodeURIComponent(caseId)}/related`
+  );
 
-export const getCase = (caseId) =>
-  apiRequest(`/cases/${caseId}`);
+  if (!response.ok) {
+    throw new Error(
+      `Related cases API failed with status ${response.status}`
+    );
+  }
 
-export const getCaseNetwork = (caseId) =>
-  apiRequest(`/cases/${caseId}/network`);
+  return response.json();
+}
 
-export const getRelatedCases = (caseId) =>
-  apiRequest(`/cases/${caseId}/related`);
+export async function getIndirectConnections(caseId) {
+  const response = await fetch(
+    `${API_BASE_URL}/cases/${encodeURIComponent(caseId)}/indirect`
+  );
 
-// Entities
-export const getEntity = (entityId) =>
-  apiRequest(`/entities/${entityId}`);
+  if (!response.ok) {
+    throw new Error(
+      `Indirect connections API failed with status ${response.status}`
+    );
+  }
 
-// Network intelligence
-export const getNetworkDNA = () =>
-  apiRequest("/network/dna");
+  return response.json();
+}
 
-export const getNetworkEvolution = () =>
-  apiRequest("/network/evolution");
+export async function getNetworkDNA() {
+  const response = await fetch(`${API_BASE_URL}/network/dna`);
 
-// Relationships
-export const getRelationship = (relationshipId) =>
-  apiRequest(`/relationships/${relationshipId}`);
+  if (!response.ok) {
+    throw new Error(
+      `Network DNA API failed with status ${response.status}`
+    );
+  }
 
-// Evidence
-export const getEvidence = (evidenceId) =>
-  apiRequest(`/evidence/${evidenceId}`);
+  return response.json();
+}
 
-export default {
-  getCases,
-  getCase,
-  getCaseNetwork,
-  getRelatedCases,
-  getEntity,
-  getNetworkDNA,
-  getNetworkEvolution,
-  getRelationship,
-  getEvidence,
-};
+export async function getNetworkEvolution(fromDate, toDate) {
+  const params = new URLSearchParams({
+    from_date: fromDate,
+    to_date: toDate,
+  });
+
+  const response = await fetch(
+    `${API_BASE_URL}/network/evolution?${params.toString()}`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Network evolution API failed with status ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+export async function getIntelligenceSummary() {
+  const response = await fetch(
+    `${API_BASE_URL}/intelligence-summary`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Intelligence Summary API failed with status ${response.status}`
+    );
+  }
+
+  const data = await response.json();
+
+  if (data.status && data.status !== "success") {
+    throw new Error(
+      "Intelligence Summary API returned an unsuccessful response"
+    );
+  }
+
+  return data;
+}

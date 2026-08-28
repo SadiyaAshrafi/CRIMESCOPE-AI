@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Folder,
   Users,
@@ -14,83 +14,228 @@ import StatCard from "../components/StatCard";
 import NetworkGraph from "../components/NetworkGraph";
 import EvidencePanel from "../components/EvidencePanel";
 
-import {
-  mockEntities,
-  mockRelationships,
-  mockNetworkDNA,
-} from "../data/MockData";
+import { getIntegrationData } from "../services/api";
 
 function Dashboard() {
+  const [integrationData, setIntegrationData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [selectedEvidence, setSelectedEvidence] = useState(null);
 
-  /*
-   * Convert relationship IDs into readable entity names.
-   *
-   * This keeps the graph component independent from the
-   * backend data format and will make API integration easier later.
-   */
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadIntegrationData() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getIntegrationData();
+
+        if (mounted) {
+          setIntegrationData(data);
+        }
+      } catch (err) {
+        console.error("Integration data error:", err);
+
+        if (mounted) {
+          setError(
+            err.message || "Unable to load integration data."
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadIntegrationData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // =========================================================
+  // BACKEND DATA
+  // =========================================================
+
+  const entities = integrationData?.entities ?? [];
+  const relationships = integrationData?.relationships ?? [];
+  const cases = integrationData?.cases ?? [];
+  const evidence = integrationData?.evidence ?? [];
+  const summary = integrationData?.summary ?? {};
+
+  // =========================================================
+  // GRAPH DATA
+  // =========================================================
+
   const graphData = useMemo(() => {
     const entityMap = new Map(
-      mockEntities.map((entity) => [entity.id, entity])
+      entities.map((entity) => [entity.id, entity])
     );
 
-    const nodes = mockEntities.map((entity) => ({
+    const nodes = entities.map((entity) => ({
       id: entity.id,
       name: entity.name,
       type: entity.type,
     }));
 
-    const edges = mockRelationships.map((relationship) => {
-      const sourceEntity = entityMap.get(relationship.source);
-      const targetEntity = entityMap.get(relationship.target);
+    const edges = relationships
+      .map((relationship) => {
+        const sourceId = relationship.source_entity_id;
+        const targetId = relationship.target_entity_id;
 
-      return {
-        id: relationship.id,
-        source: relationship.source,
-        target: relationship.target,
-        type: relationship.type,
-        confidence: relationship.confidence,
-        evidenceId: relationship.evidenceId,
+        if (!sourceId || !targetId) {
+          return null;
+        }
 
-        sourceDocument: relationship.sourceDocument,
-        pageNumber: relationship.pageNumber,
-        extractionTimestamp: relationship.extractionTimestamp,
+        const sourceEntity = entityMap.get(sourceId);
+        const targetEntity = entityMap.get(targetId);
 
-        sourceName: sourceEntity?.name || relationship.source,
-        targetName: targetEntity?.name || relationship.target,
-      };
-    });
+        const relatedEvidence = evidence.find(
+          (item) =>
+            item.evidence_id === relationship.evidence_id
+        );
+
+        return {
+          id: relationship.id,
+
+          source: sourceId,
+          target: targetId,
+
+          type:
+            relationship.relationship ||
+            relationship.type ||
+            "RELATED_TO",
+
+          confidence: relationship.confidence ?? 0,
+
+          evidenceId: relationship.evidence_id,
+
+          sourceDocument:
+            relatedEvidence?.source_document,
+
+          pageNumber:
+            relatedEvidence?.page,
+
+          extractionTimestamp:
+            relatedEvidence?.extraction_timestamp,
+
+          date: relationship.date,
+
+          sourceName:
+            sourceEntity?.name ||
+            relationship.source ||
+            sourceId,
+
+          targetName:
+            targetEntity?.name ||
+            relationship.target ||
+            targetId,
+        };
+      })
+      .filter(Boolean);
 
     return {
       nodes,
       edges,
     };
-  }, []);
+  }, [entities, relationships, evidence]);
 
-  /*
-   * Current frontend statistics.
-   *
-   * These are intentionally derived from MockData.js where possible.
-   * Later these values can come directly from Irfan's API response.
-   */
-  const activeCases = 5;
+  // =========================================================
+  // STATISTICS
+  // =========================================================
+
+  const activeCases =
+    summary.total_cases ?? cases.length;
 
   const entityCount =
-    mockNetworkDNA?.entities ?? graphData.nodes.length;
+    summary.total_entities ?? entities.length;
 
   const relationshipCount =
-    mockNetworkDNA?.relationships ?? graphData.edges.length;
+    summary.total_relationships ??
+    relationships.length;
 
-  const crossCaseLinks =
-    mockNetworkDNA?.crossCaseLinks ?? 0;
+  const crossCaseLinks = useMemo(() => {
+    return entities.filter(
+      (entity) =>
+        (entity.case_ids?.length ?? 0) > 1
+    ).length;
+  }, [entities]);
+
+  // =========================================================
+  // CROSS CASE GROUPS
+  // =========================================================
+
+  const clusterCount = useMemo(() => {
+    const groups = new Set();
+
+    entities.forEach((entity) => {
+      const caseIds = [...(entity.case_ids ?? [])].sort();
+
+      if (caseIds.length > 1) {
+        groups.add(caseIds.join("-"));
+      }
+    });
+
+    return groups.size;
+  }, [entities]);
+
+  // =========================================================
+  // LATEST EVIDENCE
+  // =========================================================
+
+  const latestEvidence = useMemo(() => {
+    return [...evidence]
+      .sort((a, b) => {
+        const first = new Date(
+          a.extraction_timestamp || 0
+        ).getTime();
+
+        const second = new Date(
+          b.extraction_timestamp || 0
+        ).getTime();
+
+        return second - first;
+      })
+      .slice(0, 2);
+  }, [evidence]);
+
+  // =========================================================
+  // CROSS CASE ENTITIES
+  // =========================================================
+
+  const crossCaseEntities = useMemo(() => {
+    return entities
+      .filter(
+        (entity) =>
+          (entity.case_ids?.length ?? 0) > 1
+      )
+      .slice(0, 2);
+  }, [entities]);
+
+  // =========================================================
+  // NODE / EDGE SELECTION
+  // =========================================================
 
   const handleNodeSelect = (item) => {
-    if (!item) return;
+    if (!item) {
+      return;
+    }
 
-    if (item.type === "RELATIONSHIP") {
+    if (
+      item.type === "RELATIONSHIP" ||
+      item.evidenceId
+    ) {
       setSelectedEvidence(item);
     }
   };
+
+  // =========================================================
+  // RENDER
+  // =========================================================
 
   return (
     <div className="app-layout">
@@ -101,9 +246,7 @@ function Dashboard() {
 
         <section className="dashboard">
 
-          {/* =====================================================
-              PAGE HEADING
-          ===================================================== */}
+          {/* PAGE HEADING */}
 
           <div className="page-heading">
             <div>
@@ -119,53 +262,70 @@ function Dashboard() {
             </button>
           </div>
 
+          {/* ERROR */}
 
-          {/* =====================================================
-              STAT CARDS
-          ===================================================== */}
+          {error && (
+            <div className="panel">
+              <div className="panel-header">
+                <div>
+                  <h2>Backend Connection</h2>
+
+                  <p>
+                    Unable to load the integration dataset.
+                  </p>
+                </div>
+
+                <AlertTriangle size={20} />
+              </div>
+
+              <p>{error}</p>
+
+              <p>
+                Make sure the FastAPI backend is running on
+                http://127.0.0.1:8000
+              </p>
+            </div>
+          )}
+
+          {/* STAT CARDS */}
 
           <div className="stats-grid">
 
             <StatCard
               title="ACTIVE CASES"
-              value={activeCases}
+              value={loading ? "—" : activeCases}
               description="Investigation cases"
               icon={<Folder size={20} />}
             />
 
             <StatCard
               title="ENTITIES"
-              value={entityCount}
-              description="People & organizations"
+              value={loading ? "—" : entityCount}
+              description="People, organizations & locations"
               icon={<Users size={20} />}
             />
 
             <StatCard
               title="RELATIONSHIPS"
-              value={relationshipCount}
-              description="Known connections"
+              value={loading ? "—" : relationshipCount}
+              description="Known network connections"
               icon={<GitBranch size={20} />}
             />
 
             <StatCard
               title="CROSS-CASE LINKS"
-              value={crossCaseLinks}
-              description="Potential connections"
+              value={loading ? "—" : crossCaseLinks}
+              description="Entities appearing across cases"
               icon={<Network size={20} />}
             />
 
           </div>
 
-
-          {/* =====================================================
-              MAIN DASHBOARD GRID
-          ===================================================== */}
+          {/* MAIN DASHBOARD GRID */}
 
           <div className="dashboard-grid">
 
-            {/* ===================================================
-                NETWORK GRAPH
-            =================================================== */}
+            {/* NETWORK GRAPH */}
 
             <div className="panel network-panel">
 
@@ -187,20 +347,47 @@ function Dashboard() {
 
               <div className="network-placeholder">
 
-                <NetworkGraph
-                  nodes={graphData.nodes}
-                  edges={graphData.edges}
-                  onNodeSelect={handleNodeSelect}
-                />
+                {loading ? (
+                  <div className="timeline-empty">
+
+                    <Network size={28} />
+
+                    <h3>
+                      Loading intelligence network...
+                    </h3>
+
+                    <p>
+                      Fetching entities and relationships.
+                    </p>
+
+                  </div>
+                ) : graphData.nodes.length === 0 ? (
+                  <div className="timeline-empty">
+
+                    <Network size={28} />
+
+                    <h3>
+                      No network data available
+                    </h3>
+
+                    <p>
+                      The integration backend returned no
+                      entities.
+                    </p>
+
+                  </div>
+                ) : (
+                  <NetworkGraph
+                    nodes={graphData.nodes}
+                    edges={graphData.edges}
+                    onNodeSelect={handleNodeSelect}
+                  />
+                )}
 
               </div>
-
             </div>
 
-
-            {/* ===================================================
-                AI INSIGHTS
-            =================================================== */}
+            {/* AI INSIGHTS */}
 
             <div className="panel insights-panel">
 
@@ -218,59 +405,87 @@ function Dashboard() {
 
               </div>
 
+              {loading ? (
+                <div className="insight">
 
-              <div className="insight">
+                  <div className="insight-alert">
+                    ...
+                  </div>
 
-                <div className="insight-alert">
-                  !
+                  <div>
+                    <strong>
+                      Loading intelligence
+                    </strong>
+
+                    <p>
+                      Analyzing investigation data.
+                    </p>
+                  </div>
+
                 </div>
+              ) : (
+                <>
+                  <div className="insight">
 
-                <div>
-                  <strong>
-                    Cross-case connection detected
-                  </strong>
+                    <div className="insight-alert">
+                      !
+                    </div>
 
-                  <p>
-                    CASE-101 and CASE-103 share Ravi Kumar
-                    and Eastern Logistics.
-                  </p>
-                </div>
+                    <div>
 
-              </div>
+                      <strong>
+                        Cross-case connection detected
+                      </strong>
 
+                      <p>
+                        {crossCaseEntities.length > 0
+                          ? `${crossCaseEntities
+                              .map(
+                                (entity) =>
+                                  entity.name
+                              )
+                              .join(
+                                " and "
+                              )} appear across multiple investigations.`
+                          : "No cross-case entity detected in the current dataset."}
+                      </p>
 
-              <div className="insight">
+                    </div>
 
-                <div className="insight-alert">
-                  !
-                </div>
+                  </div>
 
-                <div>
-                  <strong>
-                    New network cluster
-                  </strong>
+                  <div className="insight">
 
-                  <p>
-                    3 entities formed a new relationship
-                    cluster in June 2026.
-                  </p>
-                </div>
+                    <div className="insight-alert">
+                      !
+                    </div>
 
-              </div>
+                    <div>
 
+                      <strong>
+                        Evidence intelligence available
+                      </strong>
+
+                      <p>
+                        {latestEvidence.length > 0
+                          ? `${latestEvidence.length} recent evidence records are available for investigation analysis.`
+                          : "No evidence records are currently available."}
+                      </p>
+
+                    </div>
+
+                  </div>
+                </>
+              )}
 
               <button className="full-button">
                 Discover Related Cases
               </button>
 
             </div>
-
           </div>
 
-
-          {/* =====================================================
-              NETWORK DNA
-          ===================================================== */}
+          {/* NETWORK DNA */}
 
           <div className="panel dna-summary">
 
@@ -284,12 +499,11 @@ function Dashboard() {
 
             </div>
 
-
             <div className="dna-values">
 
               <div>
                 <strong>
-                  {entityCount}
+                  {loading ? "—" : entityCount}
                 </strong>
 
                 <span>
@@ -297,10 +511,9 @@ function Dashboard() {
                 </span>
               </div>
 
-
               <div>
                 <strong>
-                  {relationshipCount}
+                  {loading ? "—" : relationshipCount}
                 </strong>
 
                 <span>
@@ -308,10 +521,9 @@ function Dashboard() {
                 </span>
               </div>
 
-
               <div>
                 <strong>
-                  {mockNetworkDNA?.cases ?? activeCases}
+                  {loading ? "—" : activeCases}
                 </strong>
 
                 <span>
@@ -319,21 +531,19 @@ function Dashboard() {
                 </span>
               </div>
 
-
               <div>
                 <strong>
-                  {mockNetworkDNA?.clusters ?? 0}
+                  {loading ? "—" : clusterCount}
                 </strong>
 
                 <span>
-                  Clusters
+                  Cross-case groups
                 </span>
               </div>
 
-
               <div>
                 <strong>
-                  {crossCaseLinks}
+                  {loading ? "—" : crossCaseLinks}
                 </strong>
 
                 <span>
@@ -342,19 +552,17 @@ function Dashboard() {
               </div>
 
             </div>
-
           </div>
 
         </section>
 
-
-        {/* =======================================================
-            EVIDENCE PANEL
-        ======================================================= */}
+        {/* EVIDENCE PANEL */}
 
         <EvidencePanel
           evidence={selectedEvidence}
-          onClose={() => setSelectedEvidence(null)}
+          onClose={() =>
+            setSelectedEvidence(null)
+          }
         />
 
       </main>

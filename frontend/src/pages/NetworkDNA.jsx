@@ -1,807 +1,1106 @@
-
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Users,
-  GitBranch,
-  Folder,
-  Building2,
-  MapPin,
-  Network,
-  Layers3,
-  TrendingUp,
-  X,
+Users,
+GitBranch,
+Folder,
+Building2,
+MapPin,
+Network,
+Layers3,
+TrendingUp,
+X,
+AlertTriangle,
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import NetworkGraph from "../components/NetworkGraph";
 
-import {
-  mockNetworkDNA,
-  mockNetworkEvolution,
-  mockEntities,
-  mockRelationships,
-} from "../data/MockData";
+import { getIntegrationData } from "../services/api";
 
 function NetworkDNA() {
-  const [selectedNode, setSelectedNode] = useState(null);
+const [integrationData, setIntegrationData] = useState(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
+const [selectedNode, setSelectedNode] = useState(null);
 
-  /*
-   * =========================================================
-   * DATA LAYER
-   * =========================================================
-   *
-   * Currently using mock data.
-   *
-   * Later replace these four constants with API response data.
-   *
-   * Example:
-   *
-   * const networkData = apiResponse.networkDNA;
-   * const evolutionData = apiResponse.evolution;
-   * const entities = apiResponse.entities;
-   * const relationships = apiResponse.relationships;
-   *
-   * The UI below does not need to change.
-   */
+/*
 
-  const networkData = mockNetworkDNA;
-  const evolutionData = mockNetworkEvolution;
-  const entities = mockEntities;
-  const relationships = mockRelationships;
+* =========================================================
+* LOAD BACKEND DATA
+* =========================================================
+  */
 
-  /*
-   * =========================================================
-   * HELPERS
-   * =========================================================
-   */
+useEffect(() => {
+let mounted = true;
+const loadData = async () => {
+  try {
+    setLoading(true);
+    setError("");
 
-  const formatConfidence = (confidence) => {
-    const value = Number(confidence);
+    const data = await getIntegrationData();
 
-    if (Number.isNaN(value)) {
-      return "—";
+    if (mounted) {
+      setIntegrationData(data);
     }
+  } catch (err) {
+    if (mounted) {
+      setError(
+        err?.message ||
+          "Unable to load network intelligence."
+      );
+    }
+  } finally {
+    if (mounted) {
+      setLoading(false);
+    }
+  }
+};
 
-    const percentage = value <= 1 ? value * 100 : value;
+loadData();
 
-    return `${Math.round(percentage)}%`;
-  };
+return () => {
+  mounted = false;
+};
 
-  /*
-   * =========================================================
-   * NODE LOOKUP
-   * =========================================================
-   *
-   * Faster and cleaner than repeatedly searching mockEntities.
-   */
+}, []);
 
-  const nodeMap = useMemo(() => {
-    return new Map(
-      entities.map((entity) => [entity.id, entity])
+/*
+
+* =========================================================
+* BACKEND DATA
+* =========================================================
+  */
+
+const entities = integrationData?.entities ?? [];
+const relationships = integrationData?.relationships ?? [];
+const cases = integrationData?.cases ?? [];
+const evidence = integrationData?.evidence ?? [];
+
+/*
+
+* =========================================================
+* ENTITY COUNTS
+* =========================================================
+  */
+
+const entityCounts = useMemo(() => {
+const organizations = entities.filter(
+(entity) =>
+entity.type === "ORGANIZATION" ||
+entity.label === "ORGANIZATION"
+).length;
+
+const locations = entities.filter(
+  (entity) =>
+    entity.type === "LOCATION" ||
+    entity.label === "LOCATION"
+).length;
+
+const persons = entities.filter(
+  (entity) =>
+    entity.type === "PERSON" ||
+    entity.label === "PERSON"
+).length;
+
+return {
+  total: entities.length,
+  organizations,
+  locations,
+  persons,
+};
+
+}, [entities]);
+
+/*
+
+* =========================================================
+* CROSS-CASE ENTITIES
+* =========================================================
+  */
+
+const crossCaseEntities = useMemo(() => {
+return entities.filter(
+(entity) =>
+(entity.case_ids?.length ?? 0) > 1
+);
+}, [entities]);
+
+/*
+
+* =========================================================
+* CLUSTER COUNT
+* =========================================================
+*
+* A cluster is represented here by a unique group of cases
+* shared by an entity.
+  */
+
+const clusterCount = useMemo(() => {
+const groups = new Set();
+entities.forEach((entity) => {
+  const caseIds = entity.case_ids ?? [];
+
+  if (caseIds.length > 1) {
+    groups.add(
+      [...caseIds]
+        .sort()
+        .join("-")
     );
-  }, [entities]);
+  }
+});
 
-  /*
-   * =========================================================
-   * GRAPH NODES
-   * =========================================================
-   */
+return groups.size;
 
-  const graphNodes = useMemo(() => {
-    return entities.map((entity) => ({
-      ...entity,
+}, [entities]);
 
-      cluster:
-        entity.type === "PERSON"
-          ? "PERSONS"
-          : entity.type === "ORGANIZATION"
-          ? "ORGANIZATIONS"
-          : "LOCATIONS",
-    }));
-  }, [entities]);
+/*
 
-  /*
-   * =========================================================
-   * GRAPH EDGES
-   * =========================================================
-   */
+* =========================================================
+* NETWORK DATA
+* =========================================================
+  */
 
-  const graphEdges = useMemo(() => {
-    return relationships.map((relationship) => {
-      const sourceNode = nodeMap.get(relationship.source);
-      const targetNode = nodeMap.get(relationship.target);
+const networkData = useMemo(() => {
+const totalEntities = entities.length;
+const totalRelationships = relationships.length;
+const totalCases = cases.length;
+const crossCaseLinks = crossCaseEntities.length;
+const possibleConnections =
+  totalEntities > 1
+    ? (totalEntities * (totalEntities - 1)) / 2
+    : 0;
 
-      return {
-        ...relationship,
+const density =
+  possibleConnections > 0
+    ? totalRelationships / possibleConnections
+    : 0;
 
-        source: relationship.source,
-        target: relationship.target,
+return {
+  entities: totalEntities,
+  relationships: totalRelationships,
+  cases: totalCases,
+  crossCaseLinks,
+  organizations: entityCounts.organizations,
+  locations: entityCounts.locations,
+  persons: entityCounts.persons,
+  clusters: clusterCount,
+  density:
+    possibleConnections > 0
+      ? `${(density * 100).toFixed(1)}%`
+      : "0%",
+};
 
-        sourceName:
-          sourceNode?.name || relationship.source,
+}, [
+entities,
+relationships,
+cases,
+crossCaseEntities,
+entityCounts,
+clusterCount,
+]);
 
-        targetName:
-          targetNode?.name || relationship.target,
-      };
-    });
-  }, [relationships, nodeMap]);
+/*
 
-  /*
-   * =========================================================
-   * NODE SELECTION
-   * =========================================================
-   */
+* =========================================================
+* NODE LOOKUP
+* =========================================================
+  */
 
-  const handleNodeSelect = (item) => {
-    if (!item) return;
+const nodeMap = useMemo(() => {
+return new Map(
+entities.map((entity) => [
+entity.id,
+entity,
+])
+);
+}, [entities]);
 
-    if (item.type === "RELATIONSHIP") {
-      return;
+/*
+
+* =========================================================
+* EVIDENCE LOOKUP
+* =========================================================
+  */
+
+const evidenceMap = useMemo(() => {
+return new Map(
+evidence.map((item) => [
+item.evidence_id,
+item,
+])
+);
+}, [evidence]);
+
+/*
+
+* =========================================================
+* GRAPH NODES
+* =========================================================
+  */
+
+const graphNodes = useMemo(() => {
+return entities.map((entity) => ({
+id: entity.id,
+
+  name:
+    entity.name ||
+    entity.canonical_id ||
+    entity.id,
+
+  type:
+    entity.type ||
+    entity.label ||
+    "UNKNOWN",
+
+  case_ids:
+    entity.case_ids ?? [],
+
+  cluster:
+    entity.type === "PERSON"
+      ? "PERSONS"
+      : entity.type === "ORGANIZATION"
+      ? "ORGANIZATIONS"
+      : entity.type === "LOCATION"
+      ? "LOCATIONS"
+      : "OTHER",
+}));
+
+}, [entities]);
+
+/*
+
+* =========================================================
+* GRAPH EDGES
+* =========================================================
+*
+* IMPORTANT:
+* Backend relationships use:
+*
+* source_entity_id
+* target_entity_id
+*
+* not source / target.
+  */
+
+const graphEdges = useMemo(() => {
+return relationships
+.map((relationship) => {
+const sourceId =
+relationship.source_entity_id;
+
+    const targetId =
+      relationship.target_entity_id;
+
+    if (!sourceId || !targetId) {
+      return null;
     }
 
-    setSelectedNode(item);
-  };
+    const sourceNode =
+      nodeMap.get(sourceId);
 
-  /*
-   * =========================================================
-   * SELECTED NODE CONNECTIONS
-   * =========================================================
-   */
+    const targetNode =
+      nodeMap.get(targetId);
 
-  const connectedRelationships = useMemo(() => {
-    if (!selectedNode) {
-      return [];
-    }
+    const evidenceRecord =
+      relationship.evidence_id
+        ? evidenceMap.get(
+            relationship.evidence_id
+          )
+        : null;
 
-    return graphEdges.filter(
-      (relationship) =>
-        relationship.source === selectedNode.id ||
-        relationship.target === selectedNode.id
+    return {
+      id: relationship.id,
+
+      source: sourceId,
+
+      target: targetId,
+
+      type:
+        relationship.relationship ||
+        relationship.type ||
+        "RELATED_TO",
+
+      confidence:
+        relationship.confidence ?? 0,
+
+      evidenceId:
+        relationship.evidence_id,
+
+      sourceDocument:
+        evidenceRecord?.source_document,
+
+      pageNumber:
+        evidenceRecord?.page,
+
+      extractionTimestamp:
+        relationship.timestamp ||
+        evidenceRecord?.extraction_timestamp,
+
+      date:
+        relationship.date,
+
+      caseId:
+        relationship.case_id,
+
+      sourceName:
+        sourceNode?.name ||
+        relationship.source ||
+        sourceId,
+
+      targetName:
+        targetNode?.name ||
+        relationship.target ||
+        targetId,
+    };
+  })
+  .filter(Boolean);
+
+}, [
+relationships,
+nodeMap,
+evidenceMap,
+]);
+
+/*
+
+* =========================================================
+* SELECT NODE
+* =========================================================
+  */
+
+const handleNodeSelect = (item) => {
+if (!item) {
+return;
+}
+
+```
+if (item.type === "RELATIONSHIP") {
+  return;
+}
+
+setSelectedNode(item);
+```
+
+};
+
+/*
+
+* =========================================================
+* SELECTED NODE CONNECTIONS
+* =========================================================
+  */
+
+const connectedRelationships = useMemo(() => {
+if (!selectedNode) {
+return [];
+}
+return graphEdges.filter(
+  (relationship) =>
+    relationship.source ===
+      selectedNode.id ||
+    relationship.target ===
+      selectedNode.id
+);
+
+}, [
+selectedNode,
+graphEdges,
+]);
+
+/*
+
+* =========================================================
+* CONFIDENCE FORMATTER
+* =========================================================
+  */
+
+const formatConfidence = (
+confidence
+) => {
+const value = Number(
+confidence
+);
+if (Number.isNaN(value)) {
+  return "—";
+}
+
+const percentage =
+  value <= 1
+    ? value * 100
+    : value;
+
+return `${Math.round(
+  percentage
+)}%`;
+
+};
+
+/*
+
+* =========================================================
+* NETWORK EVOLUTION
+* =========================================================
+*
+* Derived from actual backend case dates.
+*
+* Each case adds its entities and relationships to the
+* network as the investigation timeline progresses.
+  */
+
+const evolutionData = useMemo(() => {
+if (!cases.length) {
+return [];
+}
+
+const sortedCases = [...cases].sort(
+  (a, b) =>
+    new Date(
+      a.dates?.[0] ||
+        a.date ||
+        0
+    ).getTime() -
+    new Date(
+      b.dates?.[0] ||
+        b.date ||
+        0
+    ).getTime()
+);
+
+const entityFirstSeen =
+  new Map();
+
+const relationshipFirstSeen =
+  new Map();
+
+entities.forEach((entity) => {
+  const firstCaseDate = cases
+    .filter((caseItem) =>
+      (
+        entity.case_ids ??
+        []
+      ).includes(
+        caseItem.case_id
+      )
+    )
+    .map(
+      (caseItem) =>
+        caseItem.dates?.[0] ||
+        caseItem.date
+    )
+    .filter(Boolean)
+    .sort()[0];
+
+  if (firstCaseDate) {
+    entityFirstSeen.set(
+      entity.id,
+      firstCaseDate
     );
-  }, [selectedNode, graphEdges]);
+  }
+});
 
-  /*
-   * =========================================================
-   * RENDER
-   * =========================================================
-   */
+relationships.forEach(
+  (relationship) => {
+    const relationshipDate =
+      relationship.date;
 
-  return (
-    <div className="app-layout">
-      <Sidebar />
+    if (
+      relationshipDate
+    ) {
+      relationshipFirstSeen.set(
+        relationship.id,
+        relationshipDate
+      );
+    }
+  }
+);
 
-      <main className="main-content">
-        <Header />
+return sortedCases.map(
+  (caseItem) => {
+    const currentDate =
+      caseItem.dates?.[0] ||
+      caseItem.date;
 
-        <section className="dashboard network-dna-page">
+    const entitiesAtPoint =
+      [...entityFirstSeen.values()]
+        .filter(
+          (date) =>
+            date <= currentDate
+        ).length;
 
-          {/* =================================================
-              PAGE HEADER
-          ================================================= */}
+    const relationshipsAtPoint =
+      [
+        ...relationshipFirstSeen.values(),
+      ].filter(
+        (date) =>
+          date <= currentDate
+      ).length;
 
-          <div className="page-heading">
-            <div>
-              <h1>Network DNA</h1>
+    const crossCaseAtPoint =
+      entities.filter(
+        (entity) => {
+          const seenCases =
+            cases.filter(
+              (item) =>
+                (
+                  entity.case_ids ??
+                  []
+                ).includes(
+                  item.case_id
+                ) &&
+                (
+                  item.dates?.[0] ||
+                  item.date ||
+                  ""
+                ) <= currentDate
+            );
 
-              <p>
-                Structural intelligence and evolution of the
-                criminal network
-              </p>
-            </div>
+          return (
+            seenCases.length > 1
+          );
+        }
+      ).length;
 
-            <div className="dna-live-status">
-              <span className="status-dot" />
-              LIVE INTELLIGENCE
-            </div>
+    return {
+      date:
+        currentDate ||
+        caseItem.case_id,
+
+      entities:
+        entitiesAtPoint,
+
+      relationships:
+        relationshipsAtPoint,
+
+      crossCaseLinks:
+        crossCaseAtPoint,
+    };
+  }
+);
+
+}, [
+cases,
+entities,
+relationships,
+]);
+
+/*
+
+* =========================================================
+* LOADING STATE
+* =========================================================
+  */
+
+if (loading) {
+return ( <div className="app-layout"> <Sidebar />
+
+    <main className="main-content">
+      <Header />
+
+      <section className="dashboard network-dna-page">
+        <div className="page-heading">
+          <div>
+            <h1>
+              Network DNA
+            </h1>
+
+            <p>
+              Structural intelligence and
+              evolution of the criminal
+              network
+            </p>
           </div>
 
-          {/* =================================================
-              OVERVIEW CARDS
-          ================================================= */}
-
-          <div className="stats-grid">
-
-            {/* ENTITIES */}
-
-            <div className="stat-card">
-              <div className="stat-top">
-                <span>ENTITIES</span>
-
-                <Users
-                  size={18}
-                  className="stat-icon"
-                />
-              </div>
-
-              <div className="stat-value">
-                {networkData.entities}
-              </div>
-
-              <div className="stat-description">
-                People, organizations & locations
-              </div>
-            </div>
-
-            {/* RELATIONSHIPS */}
-
-            <div className="stat-card">
-              <div className="stat-top">
-                <span>RELATIONSHIPS</span>
-
-                <GitBranch
-                  size={18}
-                  className="stat-icon"
-                />
-              </div>
-
-              <div className="stat-value">
-                {networkData.relationships}
-              </div>
-
-              <div className="stat-description">
-                Known network connections
-              </div>
-            </div>
-
-            {/* CASES */}
-
-            <div className="stat-card">
-              <div className="stat-top">
-                <span>CASES</span>
-
-                <Folder
-                  size={18}
-                  className="stat-icon"
-                />
-              </div>
-
-              <div className="stat-value">
-                {networkData.cases}
-              </div>
-
-              <div className="stat-description">
-                Investigations in network
-              </div>
-            </div>
-
-            {/* CROSS CASE LINKS */}
-
-            <div className="stat-card">
-              <div className="stat-top">
-                <span>CROSS-CASE LINKS</span>
-
-                <Network
-                  size={18}
-                  className="stat-icon"
-                />
-              </div>
-
-              <div className="stat-value">
-                {networkData.crossCaseLinks}
-              </div>
-
-              <div className="stat-description">
-                Potential shared connections
-              </div>
-            </div>
-
+          <div className="dna-live-status">
+            <span className="status-dot" />
+            LOADING INTELLIGENCE
           </div>
+        </div>
 
-          {/* =================================================
-              GLOBAL NETWORK GRAPH
-          ================================================= */}
+        <div className="panel">
+          <div className="dna-empty-state">
+            <Network size={30} />
 
-          <div className="panel dna-network-panel">
+            <h3>
+              Loading network intelligence...
+            </h3>
 
-            <div className="panel-header">
-              <div>
-                <h2>Criminal Network Graph</h2>
-
-                <p>
-                  Global relationship intelligence across
-                  investigations
-                </p>
-              </div>
-
-              <span className="dna-network-badge">
-                {graphNodes.length} entities
-              </span>
-            </div>
-
-            <div className="dna-network-container">
-
-              {graphNodes.length > 0 ? (
-                <NetworkGraph
-                  nodes={graphNodes}
-                  edges={graphEdges}
-                  onNodeSelect={handleNodeSelect}
-                />
-              ) : (
-                <div className="dna-empty-state">
-                  No network intelligence available.
-                </div>
-              )}
-
-            </div>
-
+            <p>
+              Fetching entities,
+              relationships and
+              investigation data from
+              the backend.
+            </p>
           </div>
-
-          {/* =================================================
-              SELECTED ENTITY
-          ================================================= */}
-
-          {selectedNode && (
-            <div className="panel dna-selected-entity">
-
-              <div className="panel-header">
-
-                <div>
-                  <h2>Entity Intelligence</h2>
-
-                  <p>
-                    Relationship intelligence for selected
-                    entity
-                  </p>
-                </div>
-
-                <button
-                  className="dna-close-button"
-                  onClick={() => setSelectedNode(null)}
-                  aria-label="Close entity intelligence"
-                >
-                  <X size={16} />
-                </button>
-
-              </div>
-
-              <div className="dna-entity-content">
-
-                {/* ENTITY INFO */}
-
-                <div className="dna-entity-main">
-
-                  <div className="dna-entity-icon">
-
-                    {selectedNode.type === "PERSON" && (
-                      <Users size={20} />
-                    )}
-
-                    {selectedNode.type === "ORGANIZATION" && (
-                      <Building2 size={20} />
-                    )}
-
-                    {selectedNode.type === "LOCATION" && (
-                      <MapPin size={20} />
-                    )}
-
-                  </div>
-
-                  <div>
-                    <span>ENTITY</span>
-
-                    <strong>
-                      {selectedNode.name}
-                    </strong>
-
-                    <small>
-                      {selectedNode.type}
-                    </small>
-                  </div>
-
-                </div>
-
-                {/* ENTITY STATS */}
-
-                <div className="dna-entity-stats">
-
-                  <div>
-                    <strong>
-                      {connectedRelationships.length}
-                    </strong>
-
-                    <span>
-                      Connections
-                    </span>
-                  </div>
-
-                  <div>
-                    <strong>
-                      {
-                        connectedRelationships.filter(
-                          (item) =>
-                            item.source === selectedNode.id
-                        ).length
-                      }
-                    </strong>
-
-                    <span>
-                      Outgoing
-                    </span>
-                  </div>
-
-                  <div>
-                    <strong>
-                      {
-                        connectedRelationships.filter(
-                          (item) =>
-                            item.target === selectedNode.id
-                        ).length
-                      }
-                    </strong>
-
-                    <span>
-                      Incoming
-                    </span>
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* CONNECTIONS */}
-
-              {connectedRelationships.length > 0 ? (
-
-                <div className="dna-connection-list">
-
-                  {connectedRelationships.map(
-                    (relationship) => (
-
-                      <div
-                        className="dna-connection-row"
-                        key={relationship.id}
-                      >
-
-                        <div>
-                          <span>
-                            {relationship.source ===
-                            selectedNode.id
-                              ? "TO"
-                              : "FROM"}
-                          </span>
-
-                          <strong>
-                            {relationship.source ===
-                            selectedNode.id
-                              ? relationship.targetName
-                              : relationship.sourceName}
-                          </strong>
-                        </div>
-
-                        <div className="dna-connection-meta">
-
-                          <span>
-                            {relationship.type}
-                          </span>
-
-                          <strong>
-                            {formatConfidence(
-                              relationship.confidence
-                            )}
-                          </strong>
-
-                        </div>
-
-                      </div>
-
-                    )
-                  )}
-
-                </div>
-
-              ) : (
-
-                <div className="dna-empty-state dna-entity-empty">
-                  No relationships found for this entity.
-                </div>
-
-              )}
-
-            </div>
-          )}
-
-          {/* =================================================
-              NETWORK COMPOSITION + INTELLIGENCE
-          ================================================= */}
-
-          <div className="dashboard-grid">
-
-            {/* NETWORK COMPOSITION */}
-
-            <div className="panel dna-composition-panel">
-
-              <div className="panel-header">
-
-                <div>
-                  <h2>
-                    Network Composition
-                  </h2>
-
-                  <p>
-                    Distribution of entities across the
-                    intelligence graph
-                  </p>
-                </div>
-
-                <Layers3
-                  size={20}
-                  className="stat-icon"
-                />
-
-              </div>
-
-              <div className="dna-composition-grid">
-
-                {/* TOTAL ENTITIES */}
-
-                <div className="dna-composition-card">
-
-                  <div className="dna-composition-icon">
-                    <Users size={19} />
-                  </div>
-
-                  <div>
-                    <strong>
-                      {networkData.entities}
-                    </strong>
-
-                    <span>
-                      Total Entities
-                    </span>
-                  </div>
-
-                </div>
-
-                {/* ORGANIZATIONS */}
-
-                <div className="dna-composition-card">
-
-                  <div className="dna-composition-icon">
-                    <Building2 size={19} />
-                  </div>
-
-                  <div>
-                    <strong>
-                      {networkData.organizations}
-                    </strong>
-
-                    <span>
-                      Organizations
-                    </span>
-                  </div>
-
-                </div>
-
-                {/* LOCATIONS */}
-
-                <div className="dna-composition-card">
-
-                  <div className="dna-composition-icon">
-                    <MapPin size={19} />
-                  </div>
-
-                  <div>
-                    <strong>
-                      {networkData.locations}
-                    </strong>
-
-                    <span>
-                      Locations
-                    </span>
-                  </div>
-
-                </div>
-
-                {/* CLUSTERS */}
-
-                <div className="dna-composition-card">
-
-                  <div className="dna-composition-icon">
-                    <Network size={19} />
-                  </div>
-
-                  <div>
-                    <strong>
-                      {networkData.clusters}
-                    </strong>
-
-                    <span>
-                      Network Clusters
-                    </span>
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* NETWORK INTELLIGENCE */}
-
-            <div className="panel dna-health-panel">
-
-              <div className="panel-header">
-
-                <div>
-                  <h2>
-                    Network Intelligence
-                  </h2>
-
-                  <p>
-                    Current structural indicators
-                  </p>
-                </div>
-
-                <TrendingUp
-                  size={20}
-                  className="stat-icon"
-                />
-
-              </div>
-
-              <div className="dna-health-list">
-
-                {/* DENSITY */}
-
-                <div className="dna-health-row">
-
-                  <span>
-                    Network Density
-                  </span>
-
-                  <strong>
-                    {networkData.density || "UNKNOWN"}
-                  </strong>
-
-                </div>
-
-                {/* CROSS CASE */}
-
-                <div className="dna-health-row">
-
-                  <span>
-                    Cross-Case Activity
-                  </span>
-
-                  <strong>
-                    {networkData.crossCaseLinks} LINKS
-                  </strong>
-
-                </div>
-
-                {/* CLUSTERS */}
-
-                <div className="dna-health-row">
-
-                  <span>
-                    Active Clusters
-                  </span>
-
-                  <strong>
-                    {networkData.clusters}
-                  </strong>
-
-                </div>
-
-                {/* RELATIONSHIPS */}
-
-                <div className="dna-health-row">
-
-                  <span>
-                    Relationship Coverage
-                  </span>
-
-                  <strong>
-                    {networkData.relationships} CONNECTIONS
-                  </strong>
-
-                </div>
-
-              </div>
-
-            </div>
-
+        </div>
+      </section>
+    </main>
+  </div>
+);
+
+}
+
+/*
+
+* =========================================================
+* ERROR STATE
+* =========================================================
+  */
+
+if (error) {
+return ( <div className="app-layout"> <Sidebar />
+    <main className="main-content">
+      <Header />
+
+      <section className="dashboard network-dna-page">
+        <div className="page-heading">
+          <div>
+            <h1>
+              Network DNA
+            </h1>
+
+            <p>
+              Structural intelligence and
+              evolution of the criminal
+              network
+            </p>
           </div>
+        </div>
 
-          {/* =================================================
-              NETWORK EVOLUTION
-          ================================================= */}
-
-          <div className="panel dna-evolution-panel">
-
-            <div className="panel-header">
-
-              <div>
-                <h2>
-                  Network Evolution
-                </h2>
-
-                <p>
-                  How the intelligence network has grown
-                  over time
-                </p>
-              </div>
-
-              <TrendingUp
-                size={20}
-                className="stat-icon"
-              />
-
-            </div>
-
-            <div className="evolution-table">
-
-              <div className="evolution-header">
-
-                <span>PERIOD</span>
-
-                <span>ENTITIES</span>
-
-                <span>RELATIONSHIPS</span>
-
-                <span>CROSS-CASE LINKS</span>
-
-              </div>
-
-              {evolutionData.length > 0 ? (
-
-                evolutionData.map((item) => (
-
-                  <div
-                    className="evolution-row"
-                    key={item.date}
-                  >
-
-                    <strong>
-                      {item.date}
-                    </strong>
-
-                    <span>
-                      {item.entities}
-                    </span>
-
-                    <span>
-                      {item.relationships}
-                    </span>
-
-                    <span className="evolution-highlight">
-                      {item.crossCaseLinks}
-                    </span>
-
-                  </div>
-
-                ))
-
-              ) : (
-
-                <div className="dna-empty-state">
-                  No evolution data available.
-                </div>
-
-              )}
-
-            </div>
-
-          </div>
-
-          {/* =================================================
-              DNA SUMMARY
-          ================================================= */}
-
-          <div className="panel dna-summary">
-
+        <div className="panel">
+          <div className="panel-header">
             <div>
               <h2>
-                Network DNA Summary
+                Backend Connection
               </h2>
 
               <p>
-                Current intelligence network overview
+                Unable to load network
+                intelligence.
               </p>
             </div>
 
-            <div className="dna-values">
+            <AlertTriangle size={20} />
+          </div>
+
+          <p>
+            {error}
+          </p>
+
+          <p>
+            Make sure the CRIMESCOPE AI
+            backend is running on
+            http://127.0.0.1:8000.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+);
+
+}
+
+/*
+
+* =========================================================
+* RENDER
+* =========================================================
+  */
+
+return ( <div className="app-layout"> <Sidebar />
+
+  <main className="main-content">
+    <Header />
+
+    <section className="dashboard network-dna-page">
+
+      {/* =================================================
+          PAGE HEADER
+      ================================================= */}
+
+      <div className="page-heading">
+        <div>
+          <h1>
+            Network DNA
+          </h1>
+
+          <p>
+            Structural intelligence and
+            evolution of the criminal
+            network
+          </p>
+        </div>
+
+        <div className="dna-live-status">
+          <span className="status-dot" />
+          LIVE INTELLIGENCE
+        </div>
+      </div>
+
+      {/* =================================================
+          OVERVIEW CARDS
+      ================================================= */}
+
+      <div className="stats-grid">
+
+        <div className="stat-card">
+          <div className="stat-top">
+            <span>
+              ENTITIES
+            </span>
+
+            <Users
+              size={18}
+              className="stat-icon"
+            />
+          </div>
+
+          <div className="stat-value">
+            {networkData.entities}
+          </div>
+
+          <div className="stat-description">
+            People, organizations &
+            locations
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-top">
+            <span>
+              RELATIONSHIPS
+            </span>
+
+            <GitBranch
+              size={18}
+              className="stat-icon"
+            />
+          </div>
+
+          <div className="stat-value">
+            {networkData.relationships}
+          </div>
+
+          <div className="stat-description">
+            Known network connections
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-top">
+            <span>
+              CASES
+            </span>
+
+            <Folder
+              size={18}
+              className="stat-icon"
+            />
+          </div>
+
+          <div className="stat-value">
+            {networkData.cases}
+          </div>
+
+          <div className="stat-description">
+            Investigations in network
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-top">
+            <span>
+              CROSS-CASE LINKS
+            </span>
+
+            <Network
+              size={18}
+              className="stat-icon"
+            />
+          </div>
+
+          <div className="stat-value">
+            {networkData.crossCaseLinks}
+          </div>
+
+          <div className="stat-description">
+            Potential shared connections
+          </div>
+        </div>
+
+      </div>
+
+      {/* =================================================
+          GLOBAL NETWORK GRAPH
+      ================================================= */}
+
+      <div className="panel dna-network-panel">
+
+        <div className="panel-header">
+          <div>
+            <h2>
+              Criminal Network Graph
+            </h2>
+
+            <p>
+              Global relationship
+              intelligence across
+              investigations
+            </p>
+          </div>
+
+          <span className="dna-network-badge">
+            {graphNodes.length} entities
+          </span>
+        </div>
+
+        <div className="dna-network-container">
+
+          {graphNodes.length > 0 ? (
+            <NetworkGraph
+              nodes={graphNodes}
+              edges={graphEdges}
+              onNodeSelect={
+                handleNodeSelect
+              }
+            />
+          ) : (
+            <div className="dna-empty-state">
+              <Network size={28} />
+
+              <h3>
+                No network intelligence
+              </h3>
+
+              <p>
+                The backend returned no
+                entities.
+              </p>
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* =================================================
+          SELECTED ENTITY
+      ================================================= */}
+
+      {selectedNode && (
+        <div className="panel dna-selected-entity">
+
+          <div className="panel-header">
+
+            <div>
+              <h2>
+                Entity Intelligence
+              </h2>
+
+              <p>
+                Relationship intelligence
+                for selected entity
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="dna-close-button"
+              onClick={() =>
+                setSelectedNode(null)
+              }
+              aria-label="Close entity intelligence"
+            >
+              <X size={16} />
+            </button>
+
+          </div>
+
+          <div className="dna-entity-content">
+
+            <div className="dna-entity-main">
+
+              <div className="dna-entity-icon">
+
+                {selectedNode.type ===
+                  "PERSON" && (
+                  <Users size={20} />
+                )}
+
+                {selectedNode.type ===
+                  "ORGANIZATION" && (
+                  <Building2 size={20} />
+                )}
+
+                {selectedNode.type ===
+                  "LOCATION" && (
+                  <MapPin size={20} />
+                )}
+
+              </div>
+
+              <div>
+                <span>
+                  ENTITY
+                </span>
+
+                <strong>
+                  {selectedNode.name}
+                </strong>
+
+                <small>
+                  {selectedNode.type}
+                </small>
+              </div>
+
+            </div>
+
+            <div className="dna-entity-stats">
+
+              <div>
+                <strong>
+                  {
+                    connectedRelationships.length
+                  }
+                </strong>
+
+                <span>
+                  Connections
+                </span>
+              </div>
+
+              <div>
+                <strong>
+                  {
+                    connectedRelationships.filter(
+                      (item) =>
+                        item.source ===
+                        selectedNode.id
+                    ).length
+                  }
+                </strong>
+
+                <span>
+                  Outgoing
+                </span>
+              </div>
+
+              <div>
+                <strong>
+                  {
+                    connectedRelationships.filter(
+                      (item) =>
+                        item.target ===
+                        selectedNode.id
+                    ).length
+                  }
+                </strong>
+
+                <span>
+                  Incoming
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+          {connectedRelationships.length >
+          0 ? (
+            <div className="dna-connection-list">
+
+              {connectedRelationships.map(
+                (relationship) => (
+                  <div
+                    className="dna-connection-row"
+                    key={
+                      relationship.id
+                    }
+                  >
+
+                    <div>
+                      <span>
+                        {relationship.source ===
+                        selectedNode.id
+                          ? "TO"
+                          : "FROM"}
+                      </span>
+
+                      <strong>
+                        {relationship.source ===
+                        selectedNode.id
+                          ? relationship.targetName
+                          : relationship.sourceName}
+                      </strong>
+                    </div>
+
+                    <div className="dna-connection-meta">
+
+                      <span>
+                        {
+                          relationship.type
+                        }
+                      </span>
+
+                      <strong>
+                        {formatConfidence(
+                          relationship.confidence
+                        )}
+                      </strong>
+
+                    </div>
+
+                  </div>
+                )
+              )}
+
+            </div>
+          ) : (
+            <div className="dna-empty-state dna-entity-empty">
+              No relationships found
+              for this entity.
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* =================================================
+          NETWORK COMPOSITION + INTELLIGENCE
+      ================================================= */}
+
+      <div className="dashboard-grid">
+
+        <div className="panel dna-composition-panel">
+
+          <div className="panel-header">
+
+            <div>
+              <h2>
+                Network Composition
+              </h2>
+
+              <p>
+                Distribution of entities
+                across the intelligence
+                graph
+              </p>
+            </div>
+
+            <Layers3
+              size={20}
+              className="stat-icon"
+            />
+
+          </div>
+
+          <div className="dna-composition-grid">
+
+            <div className="dna-composition-card">
+
+              <div className="dna-composition-icon">
+                <Users size={19} />
+              </div>
 
               <div>
                 <strong>
@@ -809,28 +1108,70 @@ function NetworkDNA() {
                 </strong>
 
                 <span>
-                  Entities
+                  Total Entities
                 </span>
+              </div>
+
+            </div>
+
+            <div className="dna-composition-card">
+
+              <div className="dna-composition-icon">
+                <Users size={19} />
               </div>
 
               <div>
                 <strong>
-                  {networkData.relationships}
+                  {networkData.persons}
                 </strong>
 
                 <span>
-                  Relationships
+                  Persons
                 </span>
+              </div>
+
+            </div>
+
+            <div className="dna-composition-card">
+
+              <div className="dna-composition-icon">
+                <Building2 size={19} />
               </div>
 
               <div>
                 <strong>
-                  {networkData.cases}
+                  {networkData.organizations}
                 </strong>
 
                 <span>
-                  Cases
+                  Organizations
                 </span>
+              </div>
+
+            </div>
+
+            <div className="dna-composition-card">
+
+              <div className="dna-composition-icon">
+                <MapPin size={19} />
+              </div>
+
+              <div>
+                <strong>
+                  {networkData.locations}
+                </strong>
+
+                <span>
+                  Locations
+                </span>
+              </div>
+
+            </div>
+
+            <div className="dna-composition-card">
+
+              <div className="dna-composition-icon">
+                <Network size={19} />
               </div>
 
               <div>
@@ -839,17 +1180,7 @@ function NetworkDNA() {
                 </strong>
 
                 <span>
-                  Clusters
-                </span>
-              </div>
-
-              <div>
-                <strong>
-                  {networkData.crossCaseLinks}
-                </strong>
-
-                <span>
-                  Cross-case
+                  Network Clusters
                 </span>
               </div>
 
@@ -857,10 +1188,256 @@ function NetworkDNA() {
 
           </div>
 
-        </section>
-      </main>
-    </div>
-  );
-}
+        </div>
 
+        <div className="panel dna-health-panel">
+
+          <div className="panel-header">
+
+            <div>
+              <h2>
+                Network Intelligence
+              </h2>
+
+              <p>
+                Current structural
+                indicators
+              </p>
+            </div>
+
+            <TrendingUp
+              size={20}
+              className="stat-icon"
+            />
+
+          </div>
+
+          <div className="dna-health-list">
+
+            <div className="dna-health-row">
+
+              <span>
+                Network Density
+              </span>
+
+              <strong>
+                {networkData.density}
+              </strong>
+
+            </div>
+
+            <div className="dna-health-row">
+
+              <span>
+                Cross-Case Activity
+              </span>
+
+              <strong>
+                {networkData.crossCaseLinks}
+                {" "}
+                LINKS
+              </strong>
+
+            </div>
+
+            <div className="dna-health-row">
+
+              <span>
+                Active Clusters
+              </span>
+
+              <strong>
+                {networkData.clusters}
+              </strong>
+
+            </div>
+
+            <div className="dna-health-row">
+
+              <span>
+                Relationship Coverage
+              </span>
+
+              <strong>
+                {networkData.relationships}
+                {" "}
+                CONNECTIONS
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* =================================================
+          NETWORK EVOLUTION
+      ================================================= */}
+
+      <div className="panel dna-evolution-panel">
+
+        <div className="panel-header">
+
+          <div>
+            <h2>
+              Network Evolution
+            </h2>
+
+            <p>
+              How the intelligence
+              network has grown over time
+            </p>
+          </div>
+
+          <TrendingUp
+            size={20}
+            className="stat-icon"
+          />
+
+        </div>
+
+        <div className="evolution-table">
+
+          <div className="evolution-header">
+
+            <span>
+              PERIOD
+            </span>
+
+            <span>
+              ENTITIES
+            </span>
+
+            <span>
+              RELATIONSHIPS
+            </span>
+
+            <span>
+              CROSS-CASE LINKS
+            </span>
+
+          </div>
+
+          {evolutionData.length > 0 ? (
+            evolutionData.map(
+              (item) => (
+                <div
+                  className="evolution-row"
+                  key={
+                    item.date
+                  }
+                >
+
+                  <strong>
+                    {item.date}
+                  </strong>
+
+                  <span>
+                    {item.entities}
+                  </span>
+
+                  <span>
+                    {item.relationships}
+                  </span>
+
+                  <span className="evolution-highlight">
+                    {
+                      item.crossCaseLinks
+                    }
+                  </span>
+
+                </div>
+              )
+            )
+          ) : (
+            <div className="dna-empty-state">
+              No evolution data
+              available.
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* =================================================
+          DNA SUMMARY
+      ================================================= */}
+
+      <div className="panel dna-summary">
+
+        <div>
+          <h2>
+            Network DNA Summary
+          </h2>
+
+          <p>
+            Current intelligence
+            network overview
+          </p>
+        </div>
+
+        <div className="dna-values">
+
+          <div>
+            <strong>
+              {networkData.entities}
+            </strong>
+
+            <span>
+              Entities
+            </span>
+          </div>
+
+          <div>
+            <strong>
+              {networkData.relationships}
+            </strong>
+
+            <span>
+              Relationships
+            </span>
+          </div>
+
+          <div>
+            <strong>
+              {networkData.cases}
+            </strong>
+
+            <span>
+              Cases
+            </span>
+          </div>
+
+          <div>
+            <strong>
+              {networkData.clusters}
+            </strong>
+
+            <span>
+              Clusters
+            </span>
+          </div>
+
+          <div>
+            <strong>
+              {networkData.crossCaseLinks}
+            </strong>
+
+            <span>
+              Cross-case
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+  </main>
+</div>
+);
+}
 export default NetworkDNA;

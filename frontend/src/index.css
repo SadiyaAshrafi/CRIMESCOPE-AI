@@ -2390,6 +2390,7 @@ a {
     justify-content: space-between;
   }
 }
+
 /* =========================================================
    TIMELINE PAGE
 ========================================================= */
@@ -2400,463 +2401,569 @@ a {
   padding-bottom: 50px;
 }
 
-/* LIVE STATUS */
-
-.timeline-live-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid #28553c;
-  border-radius: 7px;
-  background: #10251b;
-  color: #65d391;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.7px;
-  white-space: nowrap;
-}
-
-.timeline-live-status .status-dot {
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #65d391;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.35);
-}
-
-/* OVERVIEW */
-
-.timeline-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 15px;
-  margin-bottom: 18px;
-}
-
-/* CONTROLS */
-
-.timeline-controls-panel {
-  margin-bottom: 18px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-}
-
-.timeline-search {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: #111827;
-  border: 1px solid #263044;
-  border-radius: 8px;
-  color: #71809a;
-}
-
-.timeline-search input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #ffffff;
-  font-size: 12px;
-}
-
-.timeline-search input::placeholder {
-  color: #68758b;
-}
-
-.timeline-filter {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 160px;
-  padding: 10px 12px;
-  background: #111827;
-  border: 1px solid #263044;
-  border-radius: 8px;
-  color: #71809a;
-}
-
-.timeline-filter select {
-  width: 100%;
-  appearance: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #cbd5e1;
-  font-family: inherit;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.timeline-filter select option {
-  background: #111827;
-  color: #ffffff;
-}
-
-.timeline-filter svg:last-child {
-  pointer-events: none;
-}
-
-/* TIMELINE PANEL */
+/* =========================================================
+   TIMELINE PANEL
+========================================================= */
 
 .timeline-panel {
   overflow: hidden;
 }
 
-.timeline-count {
+.timeline-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.timeline-panel .panel-header > div {
+  min-width: 0;
+}
+
+.timeline-panel .panel-header h2 {
+  margin: 0;
+}
+
+.timeline-panel .panel-header p {
+  margin-top: 5px;
+}
+
+.timeline-panel .case-count {
+  flex-shrink: 0;
   padding: 7px 10px;
   background: #111a2a;
   border: 1px solid #25334a;
   border-radius: 6px;
   color: #718099;
   font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-/* LIST */
+/* =========================================================
+   TIMELINE LIST
+========================================================= */
 
 .timeline-list {
   width: 100%;
-  padding: 24px 22px 10px;
+  padding: 26px 24px 12px;
 }
 
+/* =========================================================
+   TIMELINE ITEM
+========================================================= */
+
 .timeline-item {
+  position: relative;
   display: grid;
-  grid-template-columns: 100px 42px minmax(0, 1fr);
-  gap: 15px;
+  grid-template-columns: 78px 42px minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
   min-height: 120px;
 }
 
-/* DATE */
+/* =========================================================
+   DATE
+========================================================= */
 
 .timeline-date {
-  padding-top: 9px;
+  width: 100%;
+  padding-top: 7px;
   text-align: right;
 }
 
 .timeline-date strong {
   display: block;
-  color: #cbd5e1;
-  font-size: 10px;
-  font-weight: 600;
+  color: #d7dfeb;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .timeline-date span {
   display: block;
-  margin-top: 5px;
-  color: #596981;
-  font-size: 10px;
+  margin-top: 4px;
+  color: #63718a;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
 }
 
-/* TRACK */
+/* =========================================================
+   TIMELINE TRACK
+   IMPORTANT:
+   Marker + line stay in the middle 42px column.
+========================================================= */
 
 .timeline-track {
   position: relative;
+  width: 42px;
+  min-height: 100%;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
 }
 
-.timeline-icon {
+/* =========================================================
+   TIMELINE MARKER
+========================================================= */
+
+.timeline-marker {
   position: relative;
-  z-index: 2;
-  width: 34px;
-  height: 34px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  margin-top: 3px;
+  flex-shrink: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+
   border: 1px solid #31558d;
   border-radius: 50%;
   background: #142442;
-  color: #60a5fa;
+
+  box-shadow:
+    0 0 0 5px #0c1320,
+    0 0 16px rgba(59, 130, 246, 0.12);
 }
+
+.timeline-marker span {
+  width: 9px;
+  height: 9px;
+  display: block;
+  border-radius: 50%;
+  background: #60a5fa;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.55);
+}
+
+/* =========================================================
+   TIMELINE LINE
+========================================================= */
 
 .timeline-line {
   position: absolute;
-  top: 34px;
-  bottom: -1px;
+  z-index: 1;
+
+  top: 39px;
+  bottom: 0;
   left: 50%;
+
   width: 1px;
+
   transform: translateX(-50%);
+
   background: #26364e;
 }
 
-/* EVENT CARD */
+/* =========================================================
+   TIMELINE CONTENT
+========================================================= */
 
-.timeline-event-card {
-  width: 100%;
+.timeline-content {
   min-width: 0;
-  margin-bottom: 16px;
-  padding: 16px 18px;
+  margin-bottom: 20px;
+  padding: 18px 20px;
+
   border: 1px solid #202d41;
-  border-radius: 9px;
+  border-radius: 10px;
+
   background: #101827;
-  color: inherit;
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
-.timeline-event-card:hover {
+.timeline-content:hover {
   background: #121e31;
   border-color: #304665;
   transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
 }
 
-.timeline-event-top {
+/* =========================================================
+   EVENT HEADER
+========================================================= */
+
+.timeline-event-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 18px;
+  min-width: 0;
+}
+
+.timeline-event-header > div:first-child {
+  min-width: 0;
 }
 
 .timeline-event-type {
+  display: inline-block;
+  margin-bottom: 6px;
+
   color: #5f91e8;
   font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-weight: 800;
+  letter-spacing: 1.15px;
+  line-height: 1;
 }
 
-.timeline-confidence {
-  color: #65d391;
+.timeline-event-header h3 {
+  margin: 0;
+
+  color: #e7edf6;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+
+  overflow-wrap: anywhere;
+}
+
+.timeline-case-id {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 4px 7px;
+
+  border: 1px solid #293b57;
+  border-radius: 4px;
+
+  background: #111c2d;
+  color: #8192aa;
+
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+/* =========================================================
+   EVENT DATE
+========================================================= */
+
+.timeline-event-date {
+  flex-shrink: 0;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 8px;
+
+  border: 1px solid #25344c;
+  border-radius: 5px;
+
+  background: #111a2a;
+  color: #74839b;
+
   font-size: 9px;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.timeline-event-card h3 {
-  color: #e7edf6;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.timeline-event-card p {
-  margin-top: 6px;
-  color: #69778e;
-  font-size: 11px;
-  line-height: 1.5;
-}
-
-.timeline-event-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-top: 13px;
-}
-
-.timeline-event-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #718099;
-  font-size: 9px;
-}
-
-.timeline-event-meta svg {
+.timeline-event-date svg {
   color: #5f91e8;
 }
 
-.timeline-event-meta .timeline-case {
-  padding: 4px 7px;
+/* =========================================================
+   DESCRIPTION
+========================================================= */
+
+.timeline-description {
+  margin: 14px 0 0;
+
+  color: #7b899f;
+  font-size: 11px;
+  line-height: 1.6;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   LOCATION
+========================================================= */
+
+.timeline-location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 13px;
+  padding-top: 12px;
+
+  border-top: 1px solid #1d293a;
+
+  color: #718099;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.timeline-location svg {
+  flex-shrink: 0;
+  color: #5f91e8;
+}
+
+/* =========================================================
+   EVENT METRICS
+========================================================= */
+
+.timeline-event-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+
+  margin-top: 14px;
+}
+
+.timeline-metric {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 10px;
+
+  border: 1px solid #202d41;
+  border-radius: 7px;
+
+  background: #0e1726;
+}
+
+.timeline-metric > svg {
+  flex-shrink: 0;
+  color: #5f91e8;
+}
+
+.timeline-metric > div {
+  min-width: 0;
+}
+
+.timeline-metric strong {
+  display: block;
+
+  color: #d8e0eb;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.timeline-metric span {
+  display: block;
+  margin-top: 3px;
+
+  color: #596981;
+  font-size: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   ENTITY TAGS
+========================================================= */
+
+.timeline-entities {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  margin-top: 13px;
+}
+
+.timeline-entity-tag {
+  max-width: 180px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  padding: 5px 8px;
+
   border: 1px solid #293b57;
-  border-radius: 4px;
+  border-radius: 5px;
+
   background: #111c2d;
   color: #8192aa;
+
+  font-size: 8px;
   font-weight: 600;
 }
 
-/* EMPTY */
+/* =========================================================
+   EMPTY / LOADING
+========================================================= */
 
 .timeline-empty {
-  padding: 70px 20px;
+  padding: 76px 20px;
+
   text-align: center;
   color: #596981;
 }
 
 .timeline-empty svg {
-  margin-bottom: 12px;
+  margin-bottom: 13px;
+  color: #5f91e8;
 }
 
 .timeline-empty h3 {
+  margin: 0;
+
   color: #cbd5e1;
   font-size: 14px;
+  font-weight: 650;
 }
 
 .timeline-empty p {
-  margin-top: 6px;
-  font-size: 11px;
-}
+  max-width: 500px;
+  margin: 7px auto 0;
 
-/* DETAIL OVERLAY */
-
-.timeline-detail-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(2, 6, 15, 0.68);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.timeline-detail-panel {
-  width: min(720px, 100%);
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
-  background: #0d1423;
-  border: 1px solid #29364b;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55);
-}
-
-.timeline-detail-panel .panel-header {
-  padding: 0 0 18px;
-}
-
-.timeline-detail-label {
-  display: block;
-  margin-bottom: 7px;
-  color: #5f91e8;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-}
-
-.timeline-detail-panel .panel-header h2 {
-  color: #f5f7fb;
-  font-size: 19px;
-}
-
-.timeline-detail-panel .panel-header p {
-  color: #657289;
+  color: #68758b;
   font-size: 10px;
-}
-
-.timeline-detail-close {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #2b394f;
-  border-radius: 8px;
-  background: #121b2b;
-  color: #8c9bb1;
-  font-size: 22px;
-  line-height: 1;
-}
-
-.timeline-detail-close:hover {
-  background: #1a2638;
-  color: #ffffff;
-}
-
-.timeline-detail-body {
-  margin-top: 20px;
-}
-
-.timeline-detail-description {
-  padding: 15px;
-  background: #101827;
-  border: 1px solid #202d41;
-  border-radius: 9px;
-}
-
-.timeline-detail-description span,
-.timeline-detail-grid span {
-  display: block;
-  color: #596981;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.9px;
-}
-
-.timeline-detail-description p {
-  margin-top: 8px;
-  color: #aab6c8;
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-.timeline-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1px;
-  margin-top: 18px;
-  overflow: hidden;
-  background: #202b3d;
-  border: 1px solid #202b3d;
-  border-radius: 9px;
-}
-
-.timeline-detail-grid > div {
-  min-width: 0;
-  padding: 15px;
-  background: #101827;
-}
-
-.timeline-detail-grid strong {
-  display: block;
-  margin-top: 7px;
-  color: #dce4ef;
-  font-size: 11px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.timeline-detail-button {
-  width: 100%;
-  margin-top: 20px;
+  line-height: 1.5;
 }
 
 /* =========================================================
-   TIMELINE RESPONSIVE
+   TIMELINE SUMMARY
 ========================================================= */
 
-@media (max-width: 1200px) {
-  .timeline-overview-grid {
-    grid-template-columns: repeat(2, 1fr);
+.timeline-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+
+  margin-top: 18px;
+  padding: 20px 22px;
+}
+
+.timeline-summary > div:first-child {
+  min-width: 0;
+}
+
+.timeline-summary > div:first-child h2 {
+  margin: 0;
+  color: #e7edf6;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.timeline-summary > div:first-child p {
+  margin-top: 5px;
+  color: #69778e;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   TIMELINE SUMMARY VALUES
+========================================================= */
+
+.timeline-summary .dna-values {
+  flex-shrink: 0;
+
+  display: grid;
+  grid-template-columns: repeat(5, minmax(85px, 1fr));
+  gap: 10px;
+
+  width: auto;
+  margin: 0;
+}
+
+.timeline-summary .dna-values > div {
+  min-width: 0;
+
+  padding: 13px 14px;
+
+  border: 1px solid #202d41;
+  border-radius: 8px;
+
+  background: #101827;
+}
+
+.timeline-summary .dna-values strong {
+  display: block;
+
+  color: #e7edf6;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.timeline-summary .dna-values span {
+  display: block;
+
+  margin-top: 7px;
+
+  color: #68758b;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* =========================================================
+   BACKEND ERROR
+========================================================= */
+
+.timeline-page > .panel:not(.timeline-panel):has(svg) {
+  margin-bottom: 18px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+  .timeline-list {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .timeline-item {
+    grid-template-columns: 68px 38px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .timeline-event-metrics {
+    gap: 6px;
+  }
+
+  .timeline-content {
+    padding: 16px 17px;
+  }
+
+  .timeline-summary .dna-values {
+    grid-template-columns: repeat(5, minmax(70px, 1fr));
   }
 }
 
 @media (max-width: 900px) {
-  .timeline-controls-panel {
-    align-items: stretch;
+  .timeline-summary {
+    align-items: flex-start;
     flex-direction: column;
+    gap: 18px;
   }
 
-  .timeline-filter {
+  .timeline-summary .dna-values {
     width: 100%;
   }
+}
 
-  .timeline-item {
-    grid-template-columns: 75px 38px minmax(0, 1fr);
+@media (max-width: 800px) {
+  .timeline-event-header {
+    flex-direction: column;
     gap: 10px;
   }
 
-  .timeline-list {
-    padding-left: 15px;
-    padding-right: 15px;
+  .timeline-event-date {
+    align-self: flex-start;
+  }
+
+  .timeline-summary .dna-values {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -2867,97 +2974,131 @@ a {
     gap: 15px;
   }
 
-  .timeline-overview-grid {
-    grid-template-columns: 1fr;
+  .timeline-list {
+    padding: 20px 14px 10px;
   }
 
   .timeline-item {
-    grid-template-columns: 1fr;
-    gap: 0;
+    display: block;
     min-height: auto;
-    padding-bottom: 15px;
+    padding-left: 42px;
+  }
+
+  /* Mobile timeline track stays on the left */
+  .timeline-track {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+
+    width: 32px;
+    min-height: auto;
   }
 
   .timeline-date {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 0 7px 45px;
+    width: auto;
+    padding: 0;
+    margin-bottom: 7px;
+
     text-align: left;
   }
 
   .timeline-date strong,
   .timeline-date span {
+    display: inline;
     margin: 0;
   }
 
-  .timeline-track {
-    position: absolute;
-    margin-left: 5px;
-    height: 100%;
+  .timeline-date strong {
+    margin-right: 5px;
   }
 
-  .timeline-icon {
+  .timeline-marker {
     width: 30px;
     height: 30px;
+    margin-top: 0;
+
+    box-shadow:
+      0 0 0 4px #0c1320,
+      0 0 12px rgba(59, 130, 246, 0.1);
+  }
+
+  .timeline-marker span {
+    width: 8px;
+    height: 8px;
   }
 
   .timeline-line {
     top: 30px;
   }
 
-  .timeline-event-card {
-    margin-left: 40px;
-    width: calc(100% - 40px);
+  .timeline-content {
+    margin-bottom: 18px;
+    padding: 15px;
   }
 
-  .timeline-event-top {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 5px;
+  .timeline-event-header h3 {
+    font-size: 13px;
   }
 
-  .timeline-event-meta {
-    gap: 9px;
-  }
-
-  .timeline-detail-overlay {
-    padding: 10px;
-    align-items: flex-end;
-  }
-
-  .timeline-detail-panel {
-    max-height: calc(100vh - 20px);
-    padding: 18px;
-    border-radius: 12px;
-  }
-
-  .timeline-detail-grid {
+  .timeline-event-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .timeline-metric {
+    padding: 8px 9px;
+  }
+
+  .timeline-entity-tag {
+    max-width: 150px;
+  }
+
+  .timeline-summary {
+    padding: 18px 15px;
+  }
+
+  .timeline-summary .dna-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 400px) {
-  .timeline-event-card {
-    padding: 14px;
+  .timeline-list {
+    padding-left: 10px;
+    padding-right: 10px;
   }
 
-  .timeline-event-card h3 {
+  .timeline-item {
+    padding-left: 38px;
+  }
+
+  .timeline-track {
+    width: 30px;
+  }
+
+  .timeline-content {
+    padding: 13px;
+  }
+
+  .timeline-event-header h3 {
     font-size: 12px;
   }
 
-  .timeline-event-card p {
+  .timeline-description {
     font-size: 10px;
   }
 
-  .timeline-event-meta {
-    flex-direction: column;
-    align-items: flex-start;
+  .timeline-location {
+    font-size: 8px;
+  }
+
+  .timeline-summary .dna-values {
+    grid-template-columns: 1fr;
   }
 }
 
 /* =========================================================
-   INVESTIGATOR COPILOT
+   COPILOT PAGE
 ========================================================= */
 
 .copilot-page {
@@ -2966,66 +3107,95 @@ a {
   padding-bottom: 50px;
 }
 
+.copilot-heading {
+  align-items: center;
+}
+
 .copilot-title {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .copilot-title-icon {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid #31558d;
-  border-radius: 10px;
-  background: #142442;
+  border: 1px solid #29466f;
+  border-radius: 9px;
+  background: #12213a;
   color: #60a5fa;
 }
 
+.copilot-title h1 {
+  margin: 0;
+}
+
+.copilot-title p {
+  margin-top: 5px;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
 .copilot-status {
-  display: flex;
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid #28553c;
-  border-radius: 7px;
-  background: #10251b;
-  color: #65d391;
+  padding: 7px 10px;
+  border: 1px solid #25344c;
+  border-radius: 6px;
+  background: #111a2a;
+  color: #718099;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.7px;
-  white-space: nowrap;
 }
 
 .copilot-status .status-dot {
   width: 7px;
   height: 7px;
-  background: #65d391;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.35);
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
 }
 
+
 /* =========================================================
-   COPILOT LAYOUT
+   MAIN LAYOUT
 ========================================================= */
 
 .copilot-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  align-items: start;
 }
+
+
+/* =========================================================
+   CHAT PANEL
+========================================================= */
 
 .copilot-chat-panel {
-  min-height: 620px;
+  min-width: 0;
+  min-height: 650px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.copilot-chat-panel > .panel-header {
+.copilot-chat-panel .panel-header {
   flex-shrink: 0;
 }
+
 
 /* =========================================================
    EMPTY STATE
@@ -3033,12 +3203,12 @@ a {
 
 .copilot-empty {
   flex: 1;
-  min-height: 430px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 25px;
+  padding: 50px 30px;
   text-align: center;
 }
 
@@ -3049,97 +3219,102 @@ a {
   align-items: center;
   justify-content: center;
   margin-bottom: 18px;
-  border: 1px solid #31558d;
-  border-radius: 16px;
-  background: #142442;
+  border: 1px solid #29466f;
+  border-radius: 14px;
+  background: #12213a;
   color: #60a5fa;
 }
 
 .copilot-empty h2 {
-  color: #e8edf5;
-  font-size: 18px;
-  font-weight: 600;
+  margin: 0;
+  color: #dbe4ef;
+  font-size: 17px;
+  font-weight: 650;
 }
 
-.copilot-empty > p {
-  max-width: 500px;
-  margin-top: 9px;
-  color: #68768d;
-  font-size: 11px;
+.copilot-empty p {
+  max-width: 540px;
+  margin: 8px auto 0;
+  color: #718099;
+  font-size: 10px;
   line-height: 1.6;
 }
 
+
+/* =========================================================
+   SUGGESTIONS
+========================================================= */
+
 .copilot-suggestions {
   width: 100%;
-  max-width: 620px;
+  max-width: 600px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 25px;
 }
 
 .copilot-suggestions button {
-  min-height: 58px;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid #26364e;
-  border-radius: 8px;
-  background: #101a2a;
-  color: #8d9bb0;
-  font-family: inherit;
-  font-size: 10px;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid #202d41;
+  border-radius: 7px;
+  background: #0e1726;
+  color: #8192aa;
+  font-size: 9px;
   line-height: 1.4;
   text-align: left;
+  cursor: pointer;
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
     color 0.2s ease;
 }
 
-.copilot-suggestions button svg {
+.copilot-suggestions button:hover {
+  background: #121e31;
+  border-color: #304665;
+  color: #cbd5e1;
+}
+
+.copilot-suggestions svg {
   flex-shrink: 0;
   color: #5f91e8;
 }
 
-.copilot-suggestions button:hover {
-  background: #162442;
-  border-color: #31558d;
-  color: #dce4ef;
-}
 
 /* =========================================================
-   COPILOT MESSAGES
+   MESSAGES
 ========================================================= */
 
 .copilot-messages {
   flex: 1;
+  min-height: 500px;
+  padding: 24px;
   overflow-y: auto;
-  padding: 20px;
 }
 
 .copilot-message {
   display: flex;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 10px;
   margin-bottom: 18px;
 }
 
 .copilot-message-icon {
   width: 30px;
   height: 30px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid #293b57;
-  border-radius: 8px;
-  background: #142442;
+  border: 1px solid #263952;
+  border-radius: 7px;
+  background: #111c2d;
   color: #60a5fa;
-}
-
-.copilot-message-user .copilot-message-icon {
-  background: #17294c;
 }
 
 .copilot-message-body {
@@ -3150,20 +3325,21 @@ a {
 .copilot-message-body > span {
   display: block;
   margin-bottom: 5px;
-  color: #596981;
+  color: #5f91e8;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
 }
 
 .copilot-message-body p {
-  padding: 11px 13px;
+  margin: 0;
+  padding: 10px 12px;
   border: 1px solid #202d41;
-  border-radius: 8px;
-  background: #101827;
-  color: #cbd5e1;
-  font-size: 11px;
-  line-height: 1.55;
+  border-radius: 7px;
+  background: #0e1726;
+  color: #9aa8bb;
+  font-size: 10px;
+  line-height: 1.6;
 }
 
 .copilot-message-user {
@@ -3174,168 +3350,220 @@ a {
   text-align: right;
 }
 
-.copilot-message-user .copilot-message-body p {
-  background: #142442;
-  border-color: #29466f;
-  text-align: left;
+.copilot-message-user .copilot-message-body > span {
+  color: #8192aa;
 }
 
+.copilot-message-user .copilot-message-body p {
+  text-align: left;
+  background: #142442;
+  border-color: #29466f;
+}
+
+
 /* =========================================================
-   COPILOT INPUT
+   INPUT
 ========================================================= */
 
 .copilot-input-area {
-  padding: 16px 18px 18px;
-  border-top: 1px solid #202b3d;
+  flex-shrink: 0;
+  padding: 16px 20px 20px;
+  border-top: 1px solid #1d293a;
 }
 
 .copilot-input-wrapper {
-  width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 8px 7px 13px;
-  border: 1px solid #29364b;
-  border-radius: 9px;
-  background: #101827;
-  color: #66758c;
+  gap: 9px;
+  min-width: 0;
+  padding: 5px 6px 5px 12px;
+  border: 1px solid #26364e;
+  border-radius: 8px;
+  background: #0e1726;
 }
 
-.copilot-input-wrapper:focus-within {
-  border-color: #31558d;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+.copilot-input-wrapper > svg {
+  flex-shrink: 0;
+  color: #596981;
 }
 
 .copilot-input-wrapper input {
   flex: 1;
   min-width: 0;
-  height: 34px;
   border: 0;
   outline: 0;
   background: transparent;
-  color: #f5f7fb;
-  font-size: 11px;
+  color: #dbe4ef;
+  font-size: 10px;
 }
 
 .copilot-input-wrapper input::placeholder {
-  color: #59677e;
+  color: #596981;
 }
 
 .copilot-send-button {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 7px;
-  background: #2563eb;
-  color: white;
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
+  border: 1px solid #31558d;
+  border-radius: 6px;
+  background: #142442;
+  color: #60a5fa;
+  cursor: pointer;
 }
 
-.copilot-send-button:hover {
-  background: #1d4ed8;
-}
-
-.copilot-send-button:active {
-  transform: translateY(1px);
-}
 
 /* =========================================================
-   COPILOT SIDE COLUMN
+   RIGHT COLUMN
 ========================================================= */
 
 .copilot-side-column {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
-.copilot-intelligence-panel {
-  min-height: 390px;
+
+/* =========================================================
+   INTELLIGENCE CONTEXT
+========================================================= */
+
+.copilot-intelligence-panel,
+.copilot-capabilities-panel {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .copilot-context-list {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0 20px 20px;
 }
 
 .copilot-context-row {
-  min-height: 75px;
+  min-width: 0;
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 11px;
-  padding: 12px 18px;
-  border-bottom: 1px solid #1d2738;
-}
-
-.copilot-context-row:last-child {
-  border-bottom: 0;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #202d41;
+  border-radius: 7px;
+  background: #0e1726;
 }
 
 .copilot-context-icon {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #29466f;
-  border-radius: 8px;
-  background: #142442;
+  border: 1px solid #263952;
+  border-radius: 6px;
+  background: #111c2d;
   color: #5f91e8;
 }
 
-.copilot-context-row div:nth-child(2) {
+.copilot-context-row > div:nth-child(2) {
   min-width: 0;
 }
 
 .copilot-context-row strong {
   display: block;
-  color: #dce4ef;
-  font-size: 10px;
-  font-weight: 600;
+  color: #cbd5e1;
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
 .copilot-context-row span {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: #596981;
-  font-size: 9px;
+  font-size: 8px;
+  line-height: 1.3;
 }
 
 .copilot-context-row b {
-  color: #65d391;
-  font-size: 8px;
+  color: #4ade80;
+  font-size: 7px;
+  font-weight: 800;
   letter-spacing: 0.7px;
 }
+
+
+/* =========================================================
+   LIVE INTELLIGENCE
+========================================================= */
+
+.dna-values {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 20px 20px;
+}
+
+.dna-values > div {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 5px;
+  border: 1px solid #202d41;
+  border-radius: 6px;
+  background: #0e1726;
+  text-align: center;
+  overflow: hidden;
+}
+
+.dna-values strong {
+  display: block;
+  color: #d8e0eb;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.dna-values span {
+  display: block;
+  margin-top: 4px;
+  color: #596981;
+  font-size: 6.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: normal;
+  word-break: break-word;
+}
+
 
 /* =========================================================
    CAPABILITIES
 ========================================================= */
 
-.copilot-capabilities-panel {
-  min-height: 220px;
-}
-
 .copilot-capabilities {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: #202b3d;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  padding: 0 20px 20px;
 }
 
 .copilot-capabilities > div {
-  min-height: 72px;
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 14px;
-  background: #0d1423;
-  color: #69778e;
+  padding: 10px;
+  border: 1px solid #202d41;
+  border-radius: 7px;
+  background: #0e1726;
+  color: #718099;
   font-size: 9px;
 }
 
@@ -3344,25 +3572,55 @@ a {
   color: #5f91e8;
 }
 
+
 /* =========================================================
-   COPILOT RESPONSIVE
+   RESPONSIVE
 ========================================================= */
 
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
+  .copilot-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 15px;
+  }
+
+  .dna-values {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .dna-values > div {
+    padding: 9px 4px;
+  }
+
+  .dna-values strong {
+    font-size: 13px;
+  }
+
+  .dna-values span {
+    font-size: 6px;
+  }
+}
+
+
+@media (max-width: 850px) {
   .copilot-layout {
     grid-template-columns: 1fr;
   }
 
   .copilot-side-column {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .copilot-intelligence-panel,
-  .copilot-capabilities-panel {
-    min-height: auto;
+  .copilot-chat-panel {
+    min-height: 600px;
+  }
+
+  .dna-values {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
+
 
 @media (max-width: 650px) {
   .copilot-heading {
@@ -3375,77 +3633,51 @@ a {
     align-self: flex-start;
   }
 
-  .copilot-title {
-    align-items: flex-start;
-  }
-
-  .copilot-title-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .copilot-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .copilot-chat-panel {
-    min-height: 600px;
-  }
-
-  .copilot-empty {
-    min-height: 400px;
-    padding: 30px 18px;
-  }
-
-  .copilot-empty h2 {
-    font-size: 16px;
-  }
-
   .copilot-suggestions {
     grid-template-columns: 1fr;
   }
 
   .copilot-side-column {
-    display: flex;
+    grid-template-columns: 1fr;
   }
 
-  .copilot-message-body {
-    max-width: 85%;
+  .dna-values {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
-  .copilot-messages {
-    padding: 15px;
+  .dna-values > div {
+    padding: 8px 3px;
   }
 
-  .copilot-input-area {
-    padding: 12px;
+  .dna-values strong {
+    font-size: 12px;
+  }
+
+  .dna-values span {
+    font-size: 5.5px;
   }
 }
 
+
 @media (max-width: 400px) {
-  .copilot-title-icon {
-    width: 36px;
-    height: 36px;
+  .dna-values {
+    gap: 3px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
 
-  .copilot-title-icon svg {
-    width: 18px;
-    height: 18px;
+  .dna-values > div {
+    padding: 7px 2px;
   }
 
-  .copilot-message-body {
-    max-width: 82%;
+  .dna-values strong {
+    font-size: 11px;
   }
 
-  .copilot-context-row {
-    grid-template-columns: 34px minmax(0, 1fr);
-  }
-
-  .copilot-context-row b {
-    display: none;
-  }
-
-  .copilot-capabilities {
-    grid-template-columns: 1fr;
+  .dna-values span {
+    font-size: 5px;
   }
 }
